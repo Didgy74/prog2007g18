@@ -19,19 +19,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         tools:srcCompat="@tools:sample/avatars" />
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fabClearData"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="end|bottom"
-        android:layout_margin="16dp"
-        android:layout_marginStart="32dp"
-        android:layout_marginBottom="32dp"
-        android:clickable="true"
-        android:tint="#FF5722"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
-
     <ScrollView
         android:id="@+id/scrollView2"
         android:layout_width="0dp"

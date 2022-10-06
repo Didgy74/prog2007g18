@@ -86,6 +86,12 @@ abstract class Utils {
             }
             return arrayOf()
         }
+
+        fun clearTaskListStorage(context: Context) {
+            val file = File(context.filesDir, taskListDefaultFileName)
+            if (file.exists())
+                file.delete()
+        }
     }
 }
 

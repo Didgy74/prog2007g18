@@ -3,7 +3,8 @@ package prog2007.group18.todolist
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
-import android.os.Parcelable
+import android.view.Menu
+import android.view.MenuItem
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.activity.result.ActivityResult
@@ -11,7 +12,6 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import java.io.File
 
 class MainActivity : AppCompatActivity() {
     // This is a launcher for an Activity that will also return an
@@ -30,6 +30,23 @@ class MainActivity : AppCompatActivity() {
         initialSetup()
     }
 
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        val inflater = menuInflater
+        inflater.inflate(R.menu.menu, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        // Handle item selection
+        return when (item.itemId) {
+            R.id.clearTasksBtn -> {
+                clearAllTasks()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
+
     private fun initialSetup() {
         // Register the ActivityLauncher for NewTaskActivity
         newTaskActivityLauncher = registerForActivityResult(
@@ -40,19 +57,13 @@ class MainActivity : AppCompatActivity() {
         val fabAdd = findViewById<FloatingActionButton>(R.id.fabAdd)
         fabAdd.setOnClickListener { beginNewTaskActivity() }
 
-        // Testing code: This button just deletes all task lists
-        // in persistent memory.
-        val fabClear = findViewById<FloatingActionButton>(R.id.fabClearData)
-        fabClear.setOnClickListener { clearAllTasks() }
-
         taskList.clear()
         loadTasksFromFile().toCollection(taskList)
         repopulateGuiWithTasks(taskList.toTypedArray())
     }
 
     // Tries to load the list of task-files
-    private fun loadTasksFromFile() : Array<Task> =
-        Utils.loadTaskListFromFile(this)
+    private fun loadTasksFromFile() : Array<Task> = Utils.loadTaskListFromFile(this)
 
     // Fills the main LinearLayout with
     // text views of our tasks.
@@ -76,11 +87,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun clearTaskListStorage() {
-        val file = File(filesDir, taskListDefaultFileName)
-        if (file.exists())
-            file.delete()
-    }
+    private fun clearTaskListStorage() = Utils.clearTaskListStorage(this)
 
     private fun writeTaskListToStorage(taskList: Array<Task>) =
         Utils.writeTaskListToFile(this, taskList)
