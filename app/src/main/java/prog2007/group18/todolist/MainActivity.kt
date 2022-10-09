@@ -6,12 +6,13 @@ import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.LinearLayout
-import android.widget.TextView
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.fragment.app.commit
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+
 
 class MainActivity : AppCompatActivity() {
     // This is a launcher for an Activity that will also return an
@@ -19,7 +20,7 @@ class MainActivity : AppCompatActivity() {
     //
     // A launcher is required for activities that are meant to return results.
     // Read more: https://developer.android.com/training/basics/intents/result
-    private var newTaskActivityLauncher: ActivityResultLauncher<Intent>? = null
+    private lateinit var newTaskActivityLauncher: ActivityResultLauncher<Intent>
 
     private var taskList = ArrayList<Task>()
 
@@ -58,7 +59,17 @@ class MainActivity : AppCompatActivity() {
         fabAdd.setOnClickListener { beginNewTaskActivity() }
 
         taskList.clear()
-        loadTasksFromFile().toCollection(taskList)
+        //loadTasksFromFile().toCollection(taskList)
+
+        val task = Task()
+        task.title = "Test task"
+        taskList.add(task)
+
+        val task2 = Task().apply {
+            title = "Task number two"
+        }
+        taskList.add(task2)
+
         repopulateGuiWithTasks(taskList.toTypedArray())
     }
 
@@ -71,19 +82,16 @@ class MainActivity : AppCompatActivity() {
     // This will need to be modified to account for
     // whatever our GUI uses.
     private fun repopulateGuiWithTasks(taskList: Array<Task>) {
-        val list = findViewById<LinearLayout>(R.id.tasklist)
+        val list = findViewById<LinearLayout>(R.id.testList)
         list.removeAllViews()
-        for (task in taskList) {
-            // TODO: Here we should probably insert a Fragment(?) for each
-            // task-element. Sorting/filtering probably also factors in here somehow?
-            // For now we just add one text-widget for title and deadline
-            val newTitleView = TextView(applicationContext)
-            newTitleView.text = task.title
-            list.addView(newTitleView)
 
-            val deadlineView = TextView(applicationContext)
-            deadlineView.text = task.deadline.toFormattedString()
-            list.addView(deadlineView)
+
+        supportFragmentManager.commit {
+            setReorderingAllowed(true)
+
+            for (task in taskList) {
+                add(R.id.testList, BlankFragment.newInstance(task))
+            }
         }
     }
 
@@ -96,8 +104,8 @@ class MainActivity : AppCompatActivity() {
         clearTaskListStorage()
 
         taskList.clear()
-        val list = findViewById<LinearLayout>(R.id.tasklist)
-        list.removeAllViews()
+        //val list = findViewById<LinearLayout>(R.id.tasklist)
+        //list.removeAllViews()
     }
 
     // This is called by the NewTaskActivity when it is done.
