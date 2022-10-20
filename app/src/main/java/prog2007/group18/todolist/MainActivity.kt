@@ -3,26 +3,26 @@ package prog2007.group18.todolist
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
-import android.view.Menu
-import android.view.MenuItem
-import android.widget.LinearLayout
+import android.view.*
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.fragment.app.commit
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 
-
 class MainActivity : AppCompatActivity() {
+    private var taskList = mutableListOf<Task>()
+    private lateinit var recyclerAdapter: ListRecyclerAdapter
+
     // This is a launcher for an Activity that will also return an
     // Intent as a result. This one in particular is for the NewTask activity.
+    // It HAS to be initialized during onCreate
     //
     // A launcher is required for activities that are meant to return results.
     // Read more: https://developer.android.com/training/basics/intents/result
     private lateinit var newTaskActivityLauncher: ActivityResultLauncher<Intent>
-
-    private var taskList = ArrayList<Task>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,10 +38,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        // Handle item selection
         return when (item.itemId) {
-            R.id.clearTasksBtn -> {
+            R.id.menuClearBtn -> {
                 clearAllTasks()
+                true
+            }
+            R.id.menuAddExamplesBtn -> {
+                addExampleTasks()
                 true
             }
             else -> super.onOptionsItemSelected(item)
@@ -49,51 +52,29 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initialSetup() {
-        // Register the ActivityLauncher for NewTaskActivity
-        newTaskActivityLauncher = registerForActivityResult(
-            ActivityResultContracts.StartActivityForResult())
-            { result -> onNewTaskActivityResult(result) }
-
         // Setup the FAB that opens NewTaskActivity
         val fabAdd = findViewById<FloatingActionButton>(R.id.fabAdd)
         fabAdd.setOnClickListener { beginNewTaskActivity() }
 
-        taskList.clear()
-        //loadTasksFromFile().toCollection(taskList)
+        // Setup the launcher NewTaskActivity
+        newTaskActivityLauncher = registerForActivityResult(
+            ActivityResultContracts.StartActivityForResult())
+            { result -> onNewTaskActivityResult(result) }
 
-        val task = Task()
-        task.title = "Test task"
-        taskList.add(task)
+        // Setup the RecyclerView
+        val recycler = findViewById<RecyclerView>(R.id.mainList)
+        recycler.layoutManager = LinearLayoutManager(this)
+        recyclerAdapter = ListRecyclerAdapter(taskList)
+        recycler.adapter = recyclerAdapter
+    }
 
-        val task2 = Task().apply {
-            title = "Task number two"
-        }
-        taskList.add(task2)
-
-        repopulateGuiWithTasks(taskList.toTypedArray())
+    private fun addExampleTasks() {
+        taskList.add(Task("Test"))
+        recyclerAdapter.notifyDataSetChanged()
     }
 
     // Tries to load the list of task-files
     private fun loadTasksFromFile() : Array<Task> = Utils.loadTaskListFromFile(this)
-
-    // Fills the main LinearLayout with
-    // text views of our tasks.
-    //
-    // This will need to be modified to account for
-    // whatever our GUI uses.
-    private fun repopulateGuiWithTasks(taskList: Array<Task>) {
-        val list = findViewById<LinearLayout>(R.id.testList)
-        list.removeAllViews()
-
-
-        supportFragmentManager.commit {
-            setReorderingAllowed(true)
-
-            for (task in taskList) {
-                add(R.id.testList, BlankFragment.newInstance(task))
-            }
-        }
-    }
 
     private fun clearTaskListStorage() = Utils.clearTaskListStorage(this)
 
@@ -104,8 +85,7 @@ class MainActivity : AppCompatActivity() {
         clearTaskListStorage()
 
         taskList.clear()
-        //val list = findViewById<LinearLayout>(R.id.tasklist)
-        //list.removeAllViews()
+        recyclerAdapter.notifyDataSetChanged()
     }
 
     // This is called by the NewTaskActivity when it is done.
@@ -121,8 +101,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun beginNewTaskActivity() {
         val intent = Intent(this, NewTaskActivity::class.java)
-        assert(newTaskActivityLauncher != null)
-        newTaskActivityLauncher!!.launch(intent)
+        newTaskActivityLauncher.launch(intent)
     }
 
     // Constructs a new task, writes it to file and updates the GUI
@@ -135,9 +114,9 @@ class MainActivity : AppCompatActivity() {
         task.deadline = taskJob.deadline
         taskList.add(task)
 
+        recyclerAdapter.notifyDataSetChanged()
+
         // Write that list to file.
         writeTaskListToStorage(taskList.toTypedArray())
-
-        repopulateGuiWithTasks(taskList.toTypedArray())
     }
 }
