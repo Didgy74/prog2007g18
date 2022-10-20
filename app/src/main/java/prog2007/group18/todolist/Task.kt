@@ -15,9 +15,15 @@ const val taskListDefaultFileName = "tasklist"
 // It's important that this class, and any members is serializable
 // in order to send the task across network or store to file.
 @Serializable
+@Parcelize
 class Task(
     var title: String = "",
-    var deadline: Deadline = Deadline())
+    var deadline: Deadline = Deadline()) : Parcelable {
+
+    companion object {
+        const val key = "task"
+    }
+}
 
 // This entire class should probably be removed
 // and use DateFormat or something in its place.
