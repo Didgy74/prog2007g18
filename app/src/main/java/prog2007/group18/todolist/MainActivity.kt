@@ -74,11 +74,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     // Tries to load the list of task-files
-    private fun loadTasksFromFile() : Array<Task> = Utils.loadTaskListFromFile(this)
+    private fun loadTasksFromFile() : List<Task> = Utils.loadTaskListFromFile(this)
 
     private fun clearTaskListStorage() = Utils.clearTaskListStorage(this)
 
-    private fun writeTaskListToStorage(taskList: Array<Task>) =
+    private fun writeTaskListToStorage() = Utils.writeTaskListToFile(this, taskList)
+
+    private fun writeTaskListToStorage(taskList: List<Task>) =
         Utils.writeTaskListToFile(this, taskList)
 
     private fun clearAllTasks() {
@@ -117,6 +119,6 @@ class MainActivity : AppCompatActivity() {
         recyclerAdapter.notifyDataSetChanged()
 
         // Write that list to file.
-        writeTaskListToStorage(taskList.toTypedArray())
+        writeTaskListToStorage()
     }
 }

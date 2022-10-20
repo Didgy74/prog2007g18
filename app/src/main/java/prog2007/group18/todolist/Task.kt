@@ -54,18 +54,18 @@ abstract class Utils {
         //
         // Having this function wrapper lets us not care about
         // how the task list is serialized
-        fun serializeTaskList(taskList: Array<Task>) : String = Json.encodeToString(taskList)
+        fun serializeTaskList(taskList: List<Task>) : String = Json.encodeToString(taskList)
 
         // Deserializes a previously serialized list of tasks, back into
         // its original value.
         //
         // Having this function wrapper lets us not care about
         // how the task list is deserialized
-        fun deserializeTaskList(input: String) : Array<Task> = Json.decodeFromString(input)
+        fun deserializeTaskList(input: String) : List<Task> = Json.decodeFromString(input)
 
         fun writeTaskListToFile(
             context: Context,
-            taskList: Array<Task>,
+            taskList: List<Task>,
             filename: String = taskListDefaultFileName)
         {
             val file = context.openFileOutput(filename, AppCompatActivity.MODE_PRIVATE)
@@ -77,7 +77,7 @@ abstract class Utils {
 
         fun loadTaskListFromFile(
             context: Context,
-            filename: String = taskListDefaultFileName) : Array<Task>
+            filename: String = taskListDefaultFileName) : List<Task>
         {
             val file = File(context.filesDir, filename)
             if (file.exists()) {
@@ -90,7 +90,7 @@ abstract class Utils {
                     return deserializeTaskList(text)
                 }
             }
-            return arrayOf()
+            return listOf()
         }
 
         fun clearTaskListStorage(context: Context) {
