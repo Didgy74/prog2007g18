@@ -70,7 +70,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun addExampleTasks() {
-        taskList.add(Task("Test", LocalDateTime.now()))
+        taskList.addAll(Task.exampleTasks())
         recyclerAdapter.notifyDataSetChanged()
     }
 

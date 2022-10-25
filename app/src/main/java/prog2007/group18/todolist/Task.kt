@@ -43,6 +43,17 @@ data class Task(
 
         fun formattedDeadline(input: LocalDateTime) =
             input.format(DateTimeFormatter.ofPattern("uuuu LLLL d - HH:mm"))
+
+        fun exampleTasks() = listOf(
+            Task(
+                "Do laundry",
+                LocalDateTime.now()),
+            Task(
+                "Go to church",
+                LocalDateTime.now()),
+            Task(
+                "Go to school",
+                LocalDateTime.now()))
     }
 }
 
