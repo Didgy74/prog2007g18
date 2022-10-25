@@ -42,7 +42,6 @@ class ListRecyclerAdapter(private val taskList: MutableList<Task>) :
         checkbox.isChecked = task.done
         checkbox.setOnCheckedChangeListener { _, value ->
             task.done = value
-            notifyDataSetChanged()
         }
     }
 }

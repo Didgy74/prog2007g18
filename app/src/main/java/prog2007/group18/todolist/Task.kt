@@ -54,7 +54,16 @@ data class Task(
                 LocalDateTime.now()),
             Task(
                 "Go to school",
-                LocalDateTime.now()))
+                LocalDateTime.now()),
+            Task(
+                "Pray to God",
+                LocalDateTime.now()),
+            Task(
+                "Perform dinner prayer",
+                LocalDateTime.now()),
+            Task(
+                "Smite the heathens",
+                LocalDateTime.now()),)
     }
 }
 

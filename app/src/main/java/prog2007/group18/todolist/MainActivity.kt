@@ -48,6 +48,10 @@ class MainActivity : AppCompatActivity() {
                 addExampleTasks()
                 true
             }
+            R.id.menuClearDoneBtn -> {
+                clearDoneTasks()
+                true
+            }
             else -> super.onOptionsItemSelected(item)
         }
     }
@@ -88,6 +92,13 @@ class MainActivity : AppCompatActivity() {
         clearTaskListStorage()
 
         taskList.clear()
+        recyclerAdapter.notifyDataSetChanged()
+    }
+
+    private fun clearDoneTasks() {
+        val temp = taskList.filter { !it.done }
+        taskList.clear()
+        taskList.addAll(temp)
         recyclerAdapter.notifyDataSetChanged()
     }
 
