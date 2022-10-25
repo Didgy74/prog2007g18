@@ -20,8 +20,15 @@ class Task(
     var title: String = "",
     var deadline: Deadline = Deadline()) : Parcelable {
 
+    fun toIntent(): Intent = Intent().apply {
+        putExtra(intentKey, this@Task)
+    }
+
     companion object {
-        const val key = "task"
+        private const val intentKey = "task"
+
+        fun fromIntent(intent: Intent): Task =
+            intent.getParcelableExtra(intentKey)!!
     }
 }
 
@@ -97,38 +104,6 @@ abstract class Utils {
             val file = File(context.filesDir, taskListDefaultFileName)
             if (file.exists())
                 file.delete()
-        }
-    }
-}
-
-// This is a struct that describes the info of a task to be created,
-// that will be returned from NewTaskListActivity
-// Making the class Parcelable makes it easy to transfer across an Intent
-// Member variables need to be declared in the constructor
-// for the Parcelize to work on them, otherwise they will be ignored.
-//
-// For now this is separated from an actual Task, because
-// I assumed there would be a difference between the struct
-// needed to create a Task, versus the data of the Task itself,
-// in the future.
-@Parcelize
-class CreateTaskJob(
-    var title: String = "",
-    var deadline: Deadline = Deadline()) : Parcelable {
-
-    fun toIntent() : Intent {
-        val intent = Intent()
-        intent.putExtra(intentKey, this)
-        return intent
-    }
-
-    companion object {
-        const val intentKey = "task job"
-
-        fun fromIntent(intent: Intent) : CreateTaskJob {
-            val taskJob = intent.getParcelableExtra<CreateTaskJob>(intentKey)
-            assert(taskJob != null)
-            return taskJob!!
         }
     }
 }

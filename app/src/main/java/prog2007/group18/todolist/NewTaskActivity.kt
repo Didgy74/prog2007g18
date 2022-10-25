@@ -61,14 +61,16 @@ class NewTaskActivity : AppCompatActivity() {
     }
 
     fun onDonePressed(view: View) {
-        val newTask = CreateTaskJob()
-
+        // We should likely have some checks here, to see if this would be a valid task
+        // and then show a little error prompt if i.e title is empty
         val titleInput = findViewById<AutoCompleteTextView>(R.id.titleInput)
 
-        newTask.title = titleInput.text.toString()
-        newTask.deadline = deadline
+        val intent = Task(
+                title = titleInput.text.toString(),
+                deadline)
+            .toIntent()
 
-        setResult(Activity.RESULT_OK, newTask.toIntent())
+        setResult(Activity.RESULT_OK, intent)
         finish()
     }
 

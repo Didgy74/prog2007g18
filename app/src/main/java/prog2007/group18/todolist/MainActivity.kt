@@ -96,7 +96,7 @@ class MainActivity : AppCompatActivity() {
             // OK result means we successfully made a new task,
             // let's add it to our task list.
             assert(result.data != null)
-            val newTask = CreateTaskJob.fromIntent(result.data!!)
+            val newTask = Task.fromIntent(result.data!!)
             addNewTask(newTask)
         }
     }
@@ -109,11 +109,8 @@ class MainActivity : AppCompatActivity() {
     // Constructs a new task, writes it to file and updates the GUI
     //
     // This function probably does too many things...
-    private fun addNewTask(taskJob: CreateTaskJob) {
+    private fun addNewTask(task: Task) {
         // Add the new task to our list-variable
-        val task = Task()
-        task.title = taskJob.title
-        task.deadline = taskJob.deadline
         taskList.add(task)
 
         recyclerAdapter.notifyDataSetChanged()
