@@ -16,7 +16,7 @@ const val taskListDefaultFileName = "tasklist"
 // in order to send the task across network or store to file.
 @Serializable
 @Parcelize
-class Task(
+data class Task(
     var title: String = "",
     var deadline: Deadline = Deadline()) : Parcelable {
 
