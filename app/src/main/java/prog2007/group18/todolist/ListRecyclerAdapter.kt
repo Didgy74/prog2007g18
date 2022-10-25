@@ -3,6 +3,7 @@ package prog2007.group18.todolist
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.CheckBox
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
@@ -29,11 +30,19 @@ class ListRecyclerAdapter(private val taskList: MutableList<Task>) :
         // Grab the Entry object from our data-set.
         viewHolder.task = taskList[position]
         val task = viewHolder.task
+        val view = viewHolder.itemView
 
-        val title = viewHolder.itemView.findViewById<TextView>(R.id.taskItemTitle)
+        val title = view.findViewById<TextView>(R.id.taskItemTitle)
         title.text = task.title
 
-        val deadlineLabel = viewHolder.itemView.findViewById<TextView>(R.id.taskItemDeadline)
+        val deadlineLabel = view.findViewById<TextView>(R.id.taskItemDeadline)
         deadlineLabel.text = task.formattedDeadline()
+
+        val checkbox = view.findViewById<CheckBox>(R.id.taskItemDoneCheckbox)
+        checkbox.isChecked = task.done
+        checkbox.setOnCheckedChangeListener { _, value ->
+            task.done = value
+            notifyDataSetChanged()
+        }
     }
 }

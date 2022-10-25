@@ -26,14 +26,15 @@ const val taskListDefaultFileName = "tasklist"
 data class Task(
     var title: String,
     @Serializable(with = LocalDateTimeSerializer::class)
-    var deadline: LocalDateTime)
+    var deadline: LocalDateTime,
+    var done: Boolean = false,)
     : Parcelable
 {
     fun toIntent() = Intent().apply {
         putExtra(intentKey, this@Task)
     }
 
-    fun formattedDeadline() = formattedDeadline(deadline)
+    fun formattedDeadline(): String = formattedDeadline(deadline)
 
     companion object {
         private const val intentKey = "task"
@@ -41,7 +42,7 @@ data class Task(
         fun fromIntent(intent: Intent) =
             intent.getParcelableExtra<Task>(intentKey)!!
 
-        fun formattedDeadline(input: LocalDateTime) =
+        fun formattedDeadline(input: LocalDateTime): String =
             input.format(DateTimeFormatter.ofPattern("uuuu LLLL d - HH:mm"))
 
         fun exampleTasks() = listOf(
