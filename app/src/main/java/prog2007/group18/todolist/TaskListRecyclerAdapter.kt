@@ -34,6 +34,6 @@ class ListRecyclerAdapter(private val taskList: MutableList<Task>) :
         title.text = task.title
 
         val deadlineLabel = viewHolder.itemView.findViewById<TextView>(R.id.taskItemDeadline)
-        deadlineLabel.text = task.deadline.toFormattedString()
+        deadlineLabel.text = task.formattedDeadline()
     }
 }

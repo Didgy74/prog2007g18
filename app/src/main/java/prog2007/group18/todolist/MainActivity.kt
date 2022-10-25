@@ -11,6 +11,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import java.time.LocalDateTime
 
 class MainActivity : AppCompatActivity() {
     private var taskList = mutableListOf<Task>()
@@ -69,7 +70,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun addExampleTasks() {
-        taskList.add(Task("Test"))
+        taskList.add(Task("Test", LocalDateTime.now()))
         recyclerAdapter.notifyDataSetChanged()
     }
 

@@ -15,6 +15,7 @@ import android.widget.DatePicker
 import android.widget.TextView
 import android.widget.TimePicker
 import androidx.fragment.app.DialogFragment
+import java.time.LocalDateTime
 
 class NewTaskActivity : AppCompatActivity() {
     // Couldn't figure out how to do this without storing
@@ -22,7 +23,7 @@ class NewTaskActivity : AppCompatActivity() {
     //
     // Ideally we would build the deadline
     // out of whatever is stored in the GUI
-    private var deadline = Deadline()
+    private var deadline = LocalDateTime.now()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,22 +44,26 @@ class NewTaskActivity : AppCompatActivity() {
         setDeadlineDate(year, month, day)
     }
 
-    private fun setDeadlineDate(year: Int, monthOfYear: Int, dayOfMonth: Int) {
-        deadline.year = year
-        deadline.monthOfYear = monthOfYear
-        deadline.dayOfMonth = dayOfMonth
-        // Update the label
+    private fun updateDeadlineLabel() {
         val dateTimeLabel = findViewById<TextView>(R.id.deadlineDateTimeLabel)
-        dateTimeLabel.text = deadline.toFormattedString()
+        dateTimeLabel.text = Task.formattedDeadline(deadline)
+    }
+
+    private fun setDeadlineDate(year: Int, monthOfYear: Int, dayOfMonth: Int) {
+        deadline = deadline
+            .withYear(year)
+            .withMonth(monthOfYear)
+            .withDayOfMonth(dayOfMonth);
+        updateDeadlineLabel()
     }
 
     fun setDeadlineTime(hour: Int, minute: Int)  {
-        deadline.hourOfDay = hour
-        deadline.minuteOfHour = minute
-        // Update the label
-        val dateTimeLabel = findViewById<TextView>(R.id.deadlineDateTimeLabel)
-        dateTimeLabel.text = deadline.toFormattedString()
+        deadline = deadline
+            .withHour(hour)
+            .withMinute(minute);
+        updateDeadlineLabel()
     }
+
 
     fun onDonePressed(view: View) {
         // We should likely have some checks here, to see if this would be a valid task
@@ -87,7 +92,7 @@ class NewTaskActivity : AppCompatActivity() {
 
     // Reference: https://developer.android.com/develop/ui/views/components/pickers
     class DatePickerFragment(
-        private val deadline: Deadline) : DialogFragment(), DatePickerDialog.OnDateSetListener {
+        private val deadline: LocalDateTime) : DialogFragment(), DatePickerDialog.OnDateSetListener {
         private var dateWasSet = false
 
         override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
@@ -96,7 +101,7 @@ class NewTaskActivity : AppCompatActivity() {
                 requireContext(),
                 this,
                 deadline.year,
-                deadline.monthOfYear,
+                deadline.month.value,
                 deadline.dayOfMonth)
         }
 
@@ -115,15 +120,15 @@ class NewTaskActivity : AppCompatActivity() {
 
     // Reference: https://developer.android.com/develop/ui/views/components/pickers
     class TimePickerFragment(
-        private val deadline: Deadline) : DialogFragment(), TimePickerDialog.OnTimeSetListener {
+        private val deadline: LocalDateTime) : DialogFragment(), TimePickerDialog.OnTimeSetListener {
 
         override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
             // Create a new instance of TimePickerDialog and return it
             return TimePickerDialog(
                 activity,
                 this,
-                deadline.hourOfDay,
-                deadline.minuteOfHour,
+                deadline.hour,
+                deadline.minute,
                 DateFormat.is24HourFormat(activity))
         }
 

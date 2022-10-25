@@ -5,11 +5,18 @@ import android.content.Intent
 import android.os.Parcelable
 import androidx.appcompat.app.AppCompatActivity
 import kotlinx.parcelize.Parcelize
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.encodeToString
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.Json
 import java.io.File
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 const val taskListDefaultFileName = "tasklist"
 // It's important that this class, and any members is serializable
@@ -17,40 +24,25 @@ const val taskListDefaultFileName = "tasklist"
 @Serializable
 @Parcelize
 data class Task(
-    var title: String = "",
-    var deadline: Deadline = Deadline()) : Parcelable {
-
-    fun toIntent(): Intent = Intent().apply {
+    var title: String,
+    @Serializable(with = LocalDateTimeSerializer::class)
+    var deadline: LocalDateTime)
+    : Parcelable
+{
+    fun toIntent() = Intent().apply {
         putExtra(intentKey, this@Task)
     }
+
+    fun formattedDeadline() = formattedDeadline(deadline)
 
     companion object {
         private const val intentKey = "task"
 
-        fun fromIntent(intent: Intent): Task =
-            intent.getParcelableExtra(intentKey)!!
-    }
-}
+        fun fromIntent(intent: Intent) =
+            intent.getParcelableExtra<Task>(intentKey)!!
 
-// This entire class should probably be removed
-// and use DateFormat or something in its place.
-@Serializable
-@Parcelize
-class Deadline(
-    var year: Int = 0,
-    // Month is zero-indexed
-    var monthOfYear: Int = 0,
-    var dayOfMonth: Int = 0,
-    var hourOfDay: Int = 0,
-    var minuteOfHour: Int = 0) : Parcelable {
-
-    // Probably won't need this in the future. Just needed this
-    // to display it under testing.
-    fun toFormattedString(): String {
-        // Month is usually zero-indexed for some reason, this puts it in the
-        // [1, 12] range.
-        val actualMonthOfYear = monthOfYear + 1
-        return "Date: $year / $actualMonthOfYear / $dayOfMonth. Time: $hourOfDay : $minuteOfHour"
+        fun formattedDeadline(input: LocalDateTime) =
+            input.format(DateTimeFormatter.ofPattern("uuuu LLLL d - HH:mm"))
     }
 }
 
@@ -105,5 +97,21 @@ abstract class Utils {
             if (file.exists())
                 file.delete()
         }
+    }
+}
+
+// The Kotlin serializer doesn't work on Java serializable types, so this is some wrapper
+// serializing LocalDateTime?
+// I just fitted the code from
+// https://stackoverflow.com/questions/65398284/kotlin-serialization-serializer-has-not-been-found-for-type-uuid
+object LocalDateTimeSerializer : KSerializer<LocalDateTime> {
+    override val descriptor = PrimitiveSerialDescriptor("LocalDateTime", PrimitiveKind.STRING)
+
+    override fun deserialize(decoder: Decoder): LocalDateTime {
+        return LocalDateTime.parse(decoder.decodeString())
+    }
+
+    override fun serialize(encoder: Encoder, value: LocalDateTime) {
+        encoder.encodeString(value.toString())
     }
 }
