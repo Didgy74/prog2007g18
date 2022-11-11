@@ -69,9 +69,7 @@ class MainActivity : AppCompatActivity() {
         firebaseDb.reference.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val test = snapshot.getValue<String>()
-
                 val tempList = Utils.deserializeTaskList(test!!)
-
                 taskList.clear()
                 taskList.addAll(tempList)
                 recyclerAdapter.notifyDataSetChanged()
@@ -119,6 +117,7 @@ class MainActivity : AppCompatActivity() {
 
         taskList.clear()
         recyclerAdapter.notifyDataSetChanged()
+        firebaseDb.reference.setValue(Utils.serializeTaskList(taskList))
     }
 
     private fun clearDoneTasks() {
@@ -126,6 +125,7 @@ class MainActivity : AppCompatActivity() {
         taskList.clear()
         taskList.addAll(temp)
         recyclerAdapter.notifyDataSetChanged()
+        firebaseDb.reference.setValue(Utils.serializeTaskList(taskList))
     }
 
     // This is called by the NewTaskActivity when it is done.
@@ -155,5 +155,6 @@ class MainActivity : AppCompatActivity() {
 
         // Write that list to file.
         writeTaskListToStorage()
+        firebaseDb.reference.setValue(Utils.serializeTaskList(taskList))
     }
 }
