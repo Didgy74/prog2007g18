@@ -11,11 +11,19 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import java.time.LocalDateTime
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
+import com.google.firebase.database.ktx.database
+import com.google.firebase.database.ktx.getValue
+import com.google.firebase.ktx.Firebase
 
 class MainActivity : AppCompatActivity() {
     private var taskList = mutableListOf<Task>()
     private lateinit var recyclerAdapter: ListRecyclerAdapter
+
+    private lateinit var firebaseDb: FirebaseDatabase
 
     // This is a launcher for an Activity that will also return an
     // Intent as a result. This one in particular is for the NewTask activity.
@@ -57,6 +65,23 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initialSetup() {
+        firebaseDb = Firebase.database("https://todolist-a4182-default-rtdb.europe-west1.firebasedatabase.app/")
+        firebaseDb.reference.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val test = snapshot.getValue<String>()
+
+                val tempList = Utils.deserializeTaskList(test!!)
+
+                taskList.clear()
+                taskList.addAll(tempList)
+                recyclerAdapter.notifyDataSetChanged()
+            }
+            override fun onCancelled(error: DatabaseError) {
+
+            }
+        })
+
+
         // Setup the FAB that opens NewTaskActivity
         val fabAdd = findViewById<FloatingActionButton>(R.id.fabAdd)
         fabAdd.setOnClickListener { beginNewTaskActivity() }
@@ -76,6 +101,7 @@ class MainActivity : AppCompatActivity() {
     private fun addExampleTasks() {
         taskList.addAll(Task.exampleTasks())
         recyclerAdapter.notifyDataSetChanged()
+        firebaseDb.reference.setValue(Utils.serializeTaskList(taskList))
     }
 
     // Tries to load the list of task-files
