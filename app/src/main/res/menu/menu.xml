@@ -9,4 +9,7 @@
     <item
         android:id="@+id/menuClearDoneBtn"
         android:title="Clear done tasks" />
+    <item
+        android:id="@+id/signInBtn"
+        android:title="Sign in" />
 </menu>

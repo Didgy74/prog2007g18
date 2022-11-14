@@ -9,15 +9,12 @@ import androidx.recyclerview.widget.RecyclerView
 
 // This is the data-adapter that our RecyclerView uses
 // to construct its Views. It just points to our list of Tasks.
-class ListRecyclerAdapter(private val taskList: MutableList<Task>) :
+class ListRecyclerAdapter(private val mainActivity: MainActivity) :
     RecyclerView.Adapter<ListRecyclerAdapter.ViewHolder>() {
 
-    override fun getItemCount() = taskList.size
+    override fun getItemCount() = mainActivity.taskListSize()
 
-    class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        // This is just a reference to the Entry object it is pointing to.
-        lateinit var task: Task
-    }
+    class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {}
 
     override fun onCreateViewHolder(viewGroup: ViewGroup, viewType: Int): ViewHolder {
         // Create a new view, which defines the UI of the list item
@@ -28,8 +25,7 @@ class ListRecyclerAdapter(private val taskList: MutableList<Task>) :
 
     override fun onBindViewHolder(viewHolder: ViewHolder, position: Int) {
         // Grab the Entry object from our data-set.
-        viewHolder.task = taskList[position]
-        val task = viewHolder.task
+        val task = mainActivity.taskListGet(position)
         val view = viewHolder.itemView
 
         val title = view.findViewById<TextView>(R.id.taskItemTitle)
@@ -41,7 +37,10 @@ class ListRecyclerAdapter(private val taskList: MutableList<Task>) :
         val checkbox = view.findViewById<CheckBox>(R.id.taskItemDoneCheckbox)
         checkbox.isChecked = task.done
         checkbox.setOnCheckedChangeListener { _, value ->
-            task.done = value
+            mainActivity.taskListSet(
+                position,
+                task.copy( done = value),
+                updateRecyclerAdapter = false)
         }
     }
 }

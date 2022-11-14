@@ -3,28 +3,77 @@ package prog2007.group18.todolist
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.*
 import androidx.activity.result.ActivityResult
-import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.firebase.ui.auth.AuthUI
+import com.firebase.ui.auth.FirebaseAuthUIActivityResultContract
+import com.firebase.ui.auth.data.model.FirebaseAuthUIAuthenticationResult
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.firebase.FirebaseApp
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.FirebaseDatabase
-import com.google.firebase.database.ValueEventListener
+import com.google.firebase.database.*
 import com.google.firebase.database.ktx.database
-import com.google.firebase.database.ktx.getValue
 import com.google.firebase.ktx.Firebase
 
 class MainActivity : AppCompatActivity() {
-    private var taskList = mutableListOf<Task>()
-    private lateinit var recyclerAdapter: ListRecyclerAdapter
+    companion object {
+        private const val firebaseDbRepo = "https://todolist-a4182-default-rtdb.europe-west1.firebasedatabase.app/"
+        // Change this to "" if using the release config?
+        private const val firebaseDirName = "nils-testing"
+    }
 
+    private var isOnlineUser = false
+
+    // Don't use directly.
+    private val taskListInternal = mutableListOf<Task>()
+    private val taskList get() = taskListInternal
     private lateinit var firebaseDb: FirebaseDatabase
+    private lateinit var firebaseDir: DatabaseReference
+    private lateinit var recyclerAdapter: ListRecyclerAdapter
+    // We can't call .notifyDataSetChanged if the change was
+    // done from inside an event of the RecyclerView,
+    // so we need this optional parameter.
+    private fun taskListNotifyChange(
+        updateRecyclerAdapter: Boolean = true,
+        pushToOnline: Boolean = true)
+    {
+        if (updateRecyclerAdapter)
+            recyclerAdapter.notifyDataSetChanged()
+
+        if (taskList.isEmpty()) {
+            Utils.clearTaskListStorage(this)
+        } else {
+            Utils.writeTaskListToFile(this, taskList)
+        }
+        if (isOnlineUser && pushToOnline) {
+            // Only run if we are logged in?
+            val task = firebaseDir.setValue(Utils.serializeTaskList(taskList))
+            if (!task.isSuccessful) {
+                Log.e("TodoList", "Unable to push updates online.")
+            }
+        }
+    }
+    private fun taskListAdd(task: Task) = taskListAdd(listOf(task))
+    private fun taskListAdd(newTasks: List<Task>, pushToOnline: Boolean = true) {
+        taskList.addAll(newTasks)
+        taskListNotifyChange(pushToOnline = pushToOnline)
+    }
+    private fun taskListOverwrite(newList: List<Task>, pushToOnline: Boolean = true) {
+        taskList.clear()
+        taskListAdd(newList, pushToOnline = pushToOnline)
+    }
+    private fun taskListClear() = taskListOverwrite(listOf())
+    fun taskListSet(index: Int, newTask: Task, updateRecyclerAdapter: Boolean = true) {
+        taskList[index] = newTask
+        taskListNotifyChange(updateRecyclerAdapter)
+    }
+    fun taskListSize() = taskList.size
+    // Returns a copy
+    fun taskListGet(index: Int): Task = taskList[index].copy()
 
     // This is a launcher for an Activity that will also return an
     // Intent as a result. This one in particular is for the NewTask activity.
@@ -32,7 +81,26 @@ class MainActivity : AppCompatActivity() {
     //
     // A launcher is required for activities that are meant to return results.
     // Read more: https://developer.android.com/training/basics/intents/result
-    private lateinit var newTaskActivityLauncher: ActivityResultLauncher<Intent>
+    //private lateinit var newTaskActivityLauncher: ActivityResultLauncher<Intent>
+    private val newTaskActivityLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult())
+    { res ->
+        onNewTaskActivityResult(res)
+    }
+
+    private val signInLauncher = registerForActivityResult(
+        FirebaseAuthUIActivityResultContract())
+    { res ->
+        onSignInResult(res)
+    }
+
+    private val firebaseDbValueListener = object : ValueEventListener {
+        override fun onDataChange(snapshot: DataSnapshot) {
+            val loadedList = Utils.deserializeTaskList(snapshot.value as String)
+            taskListOverwrite(loadedList, pushToOnline = false)
+        }
+        override fun onCancelled(error: DatabaseError) {}
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -50,85 +118,69 @@ class MainActivity : AppCompatActivity() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.menuClearBtn -> {
-                clearAllTasks()
+                taskListClear()
                 true
             }
             R.id.menuAddExamplesBtn -> {
-                addExampleTasks()
+                taskListAdd(Task.exampleTasks())
                 true
             }
             R.id.menuClearDoneBtn -> {
                 clearDoneTasks()
                 true
             }
+            R.id.signInBtn -> {
+                beginSignIn()
+                true
+            }
             else -> super.onOptionsItemSelected(item)
         }
     }
 
-    private fun initialSetup() {
+    private fun setupFirebaseDb() {
         FirebaseApp.initializeApp(this)
+        firebaseDb = Firebase.database(firebaseDbRepo)
+        firebaseDir = firebaseDb.reference.child(firebaseDirName)
+    }
 
-        firebaseDb = Firebase.database("https://todolist-a4182-default-rtdb.europe-west1.firebasedatabase.app/")
-        firebaseDb.reference.addValueEventListener(object : ValueEventListener {
+    private fun initialSetup() {
+        setupFirebaseDb()
+        recyclerAdapter = ListRecyclerAdapter(this)
+
+
+
+        /*
+        val test = firebaseDir.get()
+        if (test.isComplete && test.isSuccessful) {
+            val content = test.result.getValue<String>()!!
+            val newList = Utils.deserializeTaskList(content)
+        }
+
+        firebaseDir.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                val test = snapshot.getValue<String>()
-                val tempList = Utils.deserializeTaskList(test!!)
-                taskList.clear()
-                taskList.addAll(tempList)
-                recyclerAdapter.notifyDataSetChanged()
+                val asString = snapshot.getValue<String>()!!
+                val loadedList = Utils.deserializeTaskList(asString)
+                TaskList_overwrite(loadedList)
             }
-            override fun onCancelled(error: DatabaseError) {
-
-            }
+            override fun onCancelled(error: DatabaseError) {}
         })
+         */
 
+        taskListOverwrite(Utils.loadTaskListFromFile(this))
 
         // Setup the FAB that opens NewTaskActivity
         val fabAdd = findViewById<FloatingActionButton>(R.id.fabAdd)
         fabAdd.setOnClickListener { beginNewTaskActivity() }
 
-        // Setup the launcher NewTaskActivity
-        newTaskActivityLauncher = registerForActivityResult(
-            ActivityResultContracts.StartActivityForResult())
-            { result -> onNewTaskActivityResult(result) }
-
         // Setup the RecyclerView
         val recycler = findViewById<RecyclerView>(R.id.mainList)
         recycler.layoutManager = LinearLayoutManager(this)
-        recyclerAdapter = ListRecyclerAdapter(taskList)
         recycler.adapter = recyclerAdapter
-    }
-
-    private fun addExampleTasks() {
-        taskList.addAll(Task.exampleTasks())
-        recyclerAdapter.notifyDataSetChanged()
-        firebaseDb.reference.setValue(Utils.serializeTaskList(taskList))
-    }
-
-    // Tries to load the list of task-files
-    private fun loadTasksFromFile() : List<Task> = Utils.loadTaskListFromFile(this)
-
-    private fun clearTaskListStorage() = Utils.clearTaskListStorage(this)
-
-    private fun writeTaskListToStorage() = Utils.writeTaskListToFile(this, taskList)
-
-    private fun writeTaskListToStorage(taskList: List<Task>) =
-        Utils.writeTaskListToFile(this, taskList)
-
-    private fun clearAllTasks() {
-        clearTaskListStorage()
-
-        taskList.clear()
-        recyclerAdapter.notifyDataSetChanged()
-        firebaseDb.reference.setValue(Utils.serializeTaskList(taskList))
     }
 
     private fun clearDoneTasks() {
         val temp = taskList.filter { !it.done }
-        taskList.clear()
-        taskList.addAll(temp)
-        recyclerAdapter.notifyDataSetChanged()
-        firebaseDb.reference.setValue(Utils.serializeTaskList(taskList))
+        taskListOverwrite(temp)
     }
 
     // This is called by the NewTaskActivity when it is done.
@@ -138,7 +190,7 @@ class MainActivity : AppCompatActivity() {
             // let's add it to our task list.
             assert(result.data != null)
             val newTask = Task.fromIntent(result.data!!)
-            addNewTask(newTask)
+            taskListAdd(newTask)
         }
     }
 
@@ -147,17 +199,37 @@ class MainActivity : AppCompatActivity() {
         newTaskActivityLauncher.launch(intent)
     }
 
-    // Constructs a new task, writes it to file and updates the GUI
-    //
-    // This function probably does too many things...
-    private fun addNewTask(task: Task) {
-        // Add the new task to our list-variable
-        taskList.add(task)
+    private fun beginSignIn() {
+        // Choose authentication providers
+        val providers = arrayListOf(AuthUI.IdpConfig.GoogleBuilder().build())
 
-        recyclerAdapter.notifyDataSetChanged()
+        // Create and launch sign-in intent
+        val signInIntent = AuthUI.getInstance()
+            .createSignInIntentBuilder()
+            .setAvailableProviders(providers)
+            .build()
+        signInLauncher.launch(signInIntent)
+    }
 
-        // Write that list to file.
-        writeTaskListToStorage()
-        firebaseDb.reference.setValue(Utils.serializeTaskList(taskList))
+    private fun onSignInResult(result: FirebaseAuthUIAuthenticationResult) {
+        val response = result.idpResponse
+        if (result.resultCode == RESULT_OK) {
+            // Successfully signed in
+            //val user = Firebase.auth.currentUser!!
+            // Connect to Firebase and load their copy of the tasklist?
+            firebaseDir.addValueEventListener(firebaseDbValueListener)
+            isOnlineUser = true
+        } else {
+            // Sign in failed. If response is null the user canceled the
+            // sign-in flow using the back button. Otherwise check
+            // response.getError().getErrorCode() and handle the error.
+            // ...
+
+            if (response == null) {
+                // I don't think we need to do anything if the user canceled sign in?
+            } else {
+                // Maybe display error?
+            }
+        }
     }
 }

@@ -19,6 +19,7 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 const val taskListDefaultFileName = "tasklist"
+
 // It's important that this class, and any members is serializable
 // in order to send the task across network or store to file.
 @Serializable
@@ -74,14 +75,23 @@ abstract class Utils {
         //
         // Having this function wrapper lets us not care about
         // how the task list is serialized
-        fun serializeTaskList(taskList: List<Task>) : String = Json.encodeToString(taskList)
+        fun serializeTaskList(taskList: List<Task>) : String {
+            if (taskList.isEmpty()) {
+                return ""
+            }
+            return Json.encodeToString(taskList)
+        }
 
         // Deserializes a previously serialized list of tasks, back into
         // its original value.
         //
         // Having this function wrapper lets us not care about
         // how the task list is deserialized
-        fun deserializeTaskList(input: String) : List<Task> = Json.decodeFromString(input)
+        fun deserializeTaskList(input: String) : List<Task> {
+            if (input.isEmpty())
+                return listOf()
+            return Json.decodeFromString(input)
+        }
 
         fun writeTaskListToFile(
             context: Context,
