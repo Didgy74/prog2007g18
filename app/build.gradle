@@ -5,6 +5,9 @@ plugins {
     id 'kotlin-parcelize'
     // This to have @Serialize annotation
     id 'org.jetbrains.kotlin.plugin.serialization' version '1.7.20'
+
+    // Add the Google services Gradle plugin
+    id 'com.google.gms.google-services'
 }
 
 android {
@@ -58,4 +61,16 @@ dependencies {
     // Kotlin
     implementation "androidx.fragment:fragment-ktx:1.5.3"
 
+    // Import the BoM for the Firebase platform
+    implementation platform('com.google.firebase:firebase-bom:31.0.2')
+
+    // Add the dependency for the Firebase Authentication library
+    // When using the BoM, you don't specify versions in Firebase library dependencies
+    implementation 'com.google.firebase:firebase-auth-ktx'
+    
+    implementation 'com.firebaseui:firebase-ui-auth:8.0.2'
+
+    // Add the dependency for the Realtime Database library
+    // When using the BoM, you don't specify versions in Firebase library dependencies
+    implementation 'com.google.firebase:firebase-database-ktx'
 }
