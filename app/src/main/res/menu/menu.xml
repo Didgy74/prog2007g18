@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<menu xmlns:android="http://schemas.android.com/apk/res/android">
+<menu xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android">
     <item
         android:id="@+id/menuAddExamplesBtn"
         android:title="Add example tasks" />
@@ -7,8 +8,8 @@
         android:id="@+id/menuClearBtn"
         android:title="Clear all tasks" />
     <item
-        android:id="@+id/menuClearDoneBtn"
-        android:title="Clear done tasks" />
+        android:id="@+id/showDoneTasksBtn"
+        android:title="Show done tasks" />
     <item
         android:id="@+id/signInBtn"
         android:title="Sign in" />

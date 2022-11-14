@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.view.*
+import android.widget.SearchView
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -30,19 +31,14 @@ class MainActivity : AppCompatActivity() {
 
     // Don't use directly.
     private val taskListInternal = mutableListOf<Task>()
-    private val taskList get() = taskListInternal
+    val taskList get() = taskListInternal
     private lateinit var firebaseDb: FirebaseDatabase
     private lateinit var firebaseDir: DatabaseReference
     private lateinit var recyclerAdapter: ListRecyclerAdapter
-    // We can't call .notifyDataSetChanged if the change was
-    // done from inside an event of the RecyclerView,
-    // so we need this optional parameter.
-    private fun taskListNotifyChange(
-        updateRecyclerAdapter: Boolean = true,
-        pushToOnline: Boolean = true)
-    {
-        if (updateRecyclerAdapter)
+    private fun taskListNotifyChange(pushToOnline: Boolean = true) {
+        recyclerView.post {
             recyclerAdapter.notifyDataSetChanged()
+        }
 
         if (taskList.isEmpty()) {
             Utils.clearTaskListStorage(this)
@@ -67,13 +63,15 @@ class MainActivity : AppCompatActivity() {
         taskListAdd(newList, pushToOnline = pushToOnline)
     }
     private fun taskListClear() = taskListOverwrite(listOf())
-    fun taskListSet(index: Int, newTask: Task, updateRecyclerAdapter: Boolean = true) {
+    fun taskListSet(index: Int, newTask: Task) {
         taskList[index] = newTask
-        taskListNotifyChange(updateRecyclerAdapter)
+        taskListNotifyChange()
     }
     fun taskListSize() = taskList.size
     // Returns a copy
     fun taskListGet(index: Int): Task = taskList[index].copy()
+
+    private lateinit var recyclerView: RecyclerView
 
     // This is a launcher for an Activity that will also return an
     // Intent as a result. This one in particular is for the NewTask activity.
@@ -125,8 +123,13 @@ class MainActivity : AppCompatActivity() {
                 taskListAdd(Task.exampleTasks())
                 true
             }
-            R.id.menuClearDoneBtn -> {
-                clearDoneTasks()
+            R.id.showDoneTasksBtn -> {
+                recyclerAdapter.showDone = !recyclerAdapter.showDone
+                if (recyclerAdapter.showDone) {
+                    item.title = "Hide done tasks"
+                } else {
+                    item.title = "Show done tasks"
+                }
                 true
             }
             R.id.signInBtn -> {
@@ -146,36 +149,27 @@ class MainActivity : AppCompatActivity() {
     private fun initialSetup() {
         setupFirebaseDb()
         recyclerAdapter = ListRecyclerAdapter(this)
-
-
-
-        /*
-        val test = firebaseDir.get()
-        if (test.isComplete && test.isSuccessful) {
-            val content = test.result.getValue<String>()!!
-            val newList = Utils.deserializeTaskList(content)
-        }
-
-        firebaseDir.addValueEventListener(object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                val asString = snapshot.getValue<String>()!!
-                val loadedList = Utils.deserializeTaskList(asString)
-                TaskList_overwrite(loadedList)
-            }
-            override fun onCancelled(error: DatabaseError) {}
-        })
-         */
+        recyclerView = findViewById(R.id.mainList)
 
         taskListOverwrite(Utils.loadTaskListFromFile(this))
+
+        // Setup the RecyclerView
+        recyclerView.layoutManager = LinearLayoutManager(this)
+        recyclerView.adapter = recyclerAdapter
 
         // Setup the FAB that opens NewTaskActivity
         val fabAdd = findViewById<FloatingActionButton>(R.id.fabAdd)
         fabAdd.setOnClickListener { beginNewTaskActivity() }
 
-        // Setup the RecyclerView
-        val recycler = findViewById<RecyclerView>(R.id.mainList)
-        recycler.layoutManager = LinearLayoutManager(this)
-        recycler.adapter = recyclerAdapter
+        // Setup searchview
+        val searchView = findViewById<SearchView>(R.id.search)
+        searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+            override fun onQueryTextSubmit(input: String?): Boolean = false
+            override fun onQueryTextChange(input: String?): Boolean {
+                recyclerAdapter.setSearchFilter(input ?: "")
+                return false
+            }
+        })
     }
 
     private fun clearDoneTasks() {
