@@ -14,6 +14,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.encodeToJsonElement
 import java.io.File
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -65,69 +66,6 @@ data class Task(
             Task(
                 "Smite the heathens",
                 LocalDateTime.now()),)
-    }
-}
-
-abstract class Utils {
-    companion object {
-
-        // Serializes a list of tasks into String
-        //
-        // Having this function wrapper lets us not care about
-        // how the task list is serialized
-        fun serializeTaskList(taskList: List<Task>) : String {
-            if (taskList.isEmpty()) {
-                return ""
-            }
-            return Json.encodeToString(taskList)
-        }
-
-        // Deserializes a previously serialized list of tasks, back into
-        // its original value.
-        //
-        // Having this function wrapper lets us not care about
-        // how the task list is deserialized
-        fun deserializeTaskList(input: String) : List<Task> {
-            if (input.isEmpty())
-                return listOf()
-            return Json.decodeFromString(input)
-        }
-
-        fun writeTaskListToFile(
-            context: Context,
-            taskList: List<Task>,
-            filename: String = taskListDefaultFileName)
-        {
-            val file = context.openFileOutput(filename, AppCompatActivity.MODE_PRIVATE)
-            val writer = file.bufferedWriter()
-            writer.write(serializeTaskList(taskList))
-            writer.flush()
-            file.close()
-        }
-
-        fun loadTaskListFromFile(
-            context: Context,
-            filename: String = taskListDefaultFileName) : List<Task>
-        {
-            val file = File(context.filesDir, filename)
-            if (file.exists()) {
-                // TODO: This is probably gonna need some error handling,
-                // maybe show a dialog that says unable to load existing task-list
-                // or something, and then assume it's all empty. Use exception-handling
-                // for that, probably.
-                val text = file.readText()
-                if (text.isNotEmpty()) {
-                    return deserializeTaskList(text)
-                }
-            }
-            return listOf()
-        }
-
-        fun clearTaskListStorage(context: Context) {
-            val file = File(context.filesDir, taskListDefaultFileName)
-            if (file.exists())
-                file.delete()
-        }
     }
 }
 

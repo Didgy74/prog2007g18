@@ -16,6 +16,7 @@ import com.firebase.ui.auth.FirebaseAuthUIActivityResultContract
 import com.firebase.ui.auth.data.model.FirebaseAuthUIAuthenticationResult
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.firebase.FirebaseApp
+import com.google.firebase.auth.ktx.auth
 import com.google.firebase.database.*
 import com.google.firebase.database.ktx.database
 import com.google.firebase.ktx.Firebase
@@ -27,14 +28,16 @@ class MainActivity : AppCompatActivity() {
         private const val firebaseDirName = "nils-testing"
     }
 
-    private var isOnlineUser = false
+    private val isLoggedIn get() = Firebase.auth.currentUser != null
 
-    // Don't use directly.
-    private val taskListInternal = mutableListOf<Task>()
-    val taskList get() = taskListInternal
     private lateinit var firebaseDb: FirebaseDatabase
     private lateinit var firebaseDir: DatabaseReference
     private lateinit var recyclerAdapter: ListRecyclerAdapter
+
+    // Don't use directly.
+    private val _taskListInternal = mutableListOf<Task>()
+    // This makes a copy, since we are not allowed to access the internal data directly.
+    val taskList get() = _taskListInternal.map{ it.copy() }
     private fun taskListNotifyChange(pushToOnline: Boolean = true) {
         recyclerView.post {
             recyclerAdapter.notifyDataSetChanged()
@@ -45,7 +48,7 @@ class MainActivity : AppCompatActivity() {
         } else {
             Utils.writeTaskListToFile(this, taskList)
         }
-        if (isOnlineUser && pushToOnline) {
+        if (isLoggedIn && pushToOnline) {
             // Only run if we are logged in?
             val task = firebaseDir.setValue(Utils.serializeTaskList(taskList))
             if (!task.isSuccessful) {
@@ -55,16 +58,16 @@ class MainActivity : AppCompatActivity() {
     }
     private fun taskListAdd(task: Task) = taskListAdd(listOf(task))
     private fun taskListAdd(newTasks: List<Task>, pushToOnline: Boolean = true) {
-        taskList.addAll(newTasks)
+        _taskListInternal.addAll(newTasks)
         taskListNotifyChange(pushToOnline = pushToOnline)
     }
     private fun taskListOverwrite(newList: List<Task>, pushToOnline: Boolean = true) {
-        taskList.clear()
+        _taskListInternal.clear()
         taskListAdd(newList, pushToOnline = pushToOnline)
     }
     private fun taskListClear() = taskListOverwrite(listOf())
     fun taskListSet(index: Int, newTask: Task) {
-        taskList[index] = newTask
+        _taskListInternal[index] = newTask
         taskListNotifyChange()
     }
     fun taskListSize() = taskList.size
@@ -172,11 +175,6 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
-    private fun clearDoneTasks() {
-        val temp = taskList.filter { !it.done }
-        taskListOverwrite(temp)
-    }
-
     // This is called by the NewTaskActivity when it is done.
     private fun onNewTaskActivityResult(result: ActivityResult) {
         if (result.resultCode == Activity.RESULT_OK) {
@@ -212,7 +210,6 @@ class MainActivity : AppCompatActivity() {
             //val user = Firebase.auth.currentUser!!
             // Connect to Firebase and load their copy of the tasklist?
             firebaseDir.addValueEventListener(firebaseDbValueListener)
-            isOnlineUser = true
         } else {
             // Sign in failed. If response is null the user canceled the
             // sign-in flow using the back button. Otherwise check
