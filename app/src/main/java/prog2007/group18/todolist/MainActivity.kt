@@ -25,7 +25,37 @@ class MainActivity : AppCompatActivity() {
     companion object {
         private const val firebaseDbRepo = "https://todolist-a4182-default-rtdb.europe-west1.firebasedatabase.app/"
         // Change this to "" if using the release config?
-        private const val firebaseDirName = "nils-testing"
+        private const val firebaseDirName = "main-testing"
+    }
+
+    // Don't use directly
+    private lateinit var _loadedPreferences: PersistentPreferences
+    private val preferences get() = _loadedPreferences
+    private fun setPreferences(new: PersistentPreferences) {
+        _loadedPreferences = new
+        PersistentPreferences.writeToFile(preferences, this)
+        updateMenuLabels()
+    }
+
+    private lateinit var menu: Menu
+    private fun updateMenuLabels() {
+        val showDoneItem = menu.findItem(R.id.showDoneTasksBtn)
+        showDoneItem.title = if (preferences.showDoneTasks) {
+            "Hide done tasks"
+        } else {
+            "Show done tasks"
+        }
+
+        val signInItem = menu.findItem(R.id.signInBtn)
+        signInItem.title = if (isLoggedIn) { "Sign out" } else { "Sign in" }
+    }
+
+    private fun toggleShowDoneTasks() {
+        val newValue = !preferences.showDoneTasks
+        setPreferences(preferences.copy(showDoneTasks = newValue))
+        recyclerAdapter.showDone = newValue
+
+        updateMenuLabels()
     }
 
     private val isLoggedIn get() = Firebase.auth.currentUser != null
@@ -65,7 +95,8 @@ class MainActivity : AppCompatActivity() {
         _taskListInternal.clear()
         taskListAdd(newList, pushToOnline = pushToOnline)
     }
-    private fun taskListClear() = taskListOverwrite(listOf())
+    private fun taskListClear(pushToOnline: Boolean = true) =
+        taskListOverwrite(listOf(), pushToOnline = pushToOnline)
     fun taskListSet(index: Int, newTask: Task) {
         _taskListInternal[index] = newTask
         taskListNotifyChange()
@@ -96,9 +127,20 @@ class MainActivity : AppCompatActivity() {
     }
 
     private val firebaseDbValueListener = object : ValueEventListener {
+        var nextEventOverride: ((snapshot: DataSnapshot) -> Unit)? = null
         override fun onDataChange(snapshot: DataSnapshot) {
-            val loadedList = Utils.deserializeTaskList(snapshot.value as String)
-            taskListOverwrite(loadedList, pushToOnline = false)
+            if (nextEventOverride != null) {
+                nextEventOverride!!(snapshot)
+            } else {
+                if (snapshot.value == null) {
+                    taskListClear(pushToOnline = false)
+                } else {
+                    val downloadedList = Utils.deserializeTaskList(snapshot.value as String)
+                    taskListOverwrite(downloadedList, pushToOnline = false)
+                }
+            }
+
+            nextEventOverride = null
         }
         override fun onCancelled(error: DatabaseError) {}
     }
@@ -113,6 +155,8 @@ class MainActivity : AppCompatActivity() {
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         val inflater = menuInflater
         inflater.inflate(R.menu.menu, menu)
+        this.menu = menu
+        updateMenuLabels()
         return true
     }
 
@@ -127,16 +171,11 @@ class MainActivity : AppCompatActivity() {
                 true
             }
             R.id.showDoneTasksBtn -> {
-                recyclerAdapter.showDone = !recyclerAdapter.showDone
-                if (recyclerAdapter.showDone) {
-                    item.title = "Hide done tasks"
-                } else {
-                    item.title = "Show done tasks"
-                }
+                toggleShowDoneTasks()
                 true
             }
             R.id.signInBtn -> {
-                beginSignIn()
+                toggleSignInOut()
                 true
             }
             else -> super.onOptionsItemSelected(item)
@@ -150,8 +189,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initialSetup() {
+        _loadedPreferences = PersistentPreferences.readFromFile(this)
+
         setupFirebaseDb()
-        recyclerAdapter = ListRecyclerAdapter(this)
+        recyclerAdapter = ListRecyclerAdapter(this, preferences.showDoneTasks)
         recyclerView = findViewById(R.id.mainList)
 
         taskListOverwrite(Utils.loadTaskListFromFile(this))
@@ -173,6 +214,10 @@ class MainActivity : AppCompatActivity() {
                 return false
             }
         })
+
+        // Check if we should attempt to automatically sign in
+        if (preferences.prefersOnline && !isLoggedIn)
+            beginSignInActivity()
     }
 
     // This is called by the NewTaskActivity when it is done.
@@ -191,7 +236,35 @@ class MainActivity : AppCompatActivity() {
         newTaskActivityLauncher.launch(intent)
     }
 
-    private fun beginSignIn() {
+    private fun toggleSignInOut() {
+        if (isLoggedIn) {
+            signOutProcedure()
+        } else {
+            beginSignInActivity()
+        }
+    }
+
+    private fun signOutProcedure() {
+        firebaseDir.removeEventListener(firebaseDbValueListener)
+        // Download the online data
+        firebaseDir.get().addOnSuccessListener { snapshot ->
+            this.runOnUiThread {
+                snapshot.value?.let { value ->
+                    val downloadedData = Utils.deserializeTaskList(value as String)
+                    taskListOverwrite(downloadedData, pushToOnline = false)
+                }
+            }
+        }
+
+        Firebase.auth.signOut()
+        setPreferences(preferences.copy(prefersOnline = false))
+    }
+
+    private fun beginSignInActivity() {
+        // We shouldn't be starting the sign-in activity
+        // if we are already signed in.
+        assert(!isLoggedIn)
+
         // Choose authentication providers
         val providers = arrayListOf(AuthUI.IdpConfig.GoogleBuilder().build())
 
@@ -208,8 +281,22 @@ class MainActivity : AppCompatActivity() {
         if (result.resultCode == RESULT_OK) {
             // Successfully signed in
             //val user = Firebase.auth.currentUser!!
-            // Connect to Firebase and load their copy of the tasklist?
+
+            // If Firebase already has data, then download it.
+            // Otherwise upload ours.
+            firebaseDbValueListener.nextEventOverride = { snapshot ->
+                val uploadOurData =
+                    snapshot.value == null ||
+                    (snapshot.value as String).isEmpty()
+                if (uploadOurData) {
+                    firebaseDir.setValue(Utils.serializeTaskList(taskList))
+                } else {
+                    val downloadedData = Utils.deserializeTaskList(snapshot.value as String)
+                    taskListOverwrite(downloadedData, pushToOnline = false)
+                }
+            }
             firebaseDir.addValueEventListener(firebaseDbValueListener)
+            updateMenuLabels()
         } else {
             // Sign in failed. If response is null the user canceled the
             // sign-in flow using the back button. Otherwise check

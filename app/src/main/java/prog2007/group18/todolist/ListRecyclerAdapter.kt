@@ -9,14 +9,16 @@ import androidx.recyclerview.widget.RecyclerView
 
 // This is the data-adapter that our RecyclerView uses
 // to construct its Views. It just points to our list of Tasks.
-class ListRecyclerAdapter(private val mainActivity: MainActivity) :
+class ListRecyclerAdapter(
+    private val mainActivity: MainActivity,
+    showDoneTasks: Boolean) :
     RecyclerView.Adapter<ListRecyclerAdapter.ViewHolder>() {
 
     init {
         setHasStableIds(true)
     }
 
-    private var showDoneInner = false
+    private var showDoneInner = showDoneTasks
     var showDone
         get() = showDoneInner
         set(input) {
