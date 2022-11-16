@@ -6,7 +6,7 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
-
+const val firebaseListDefaultFileName = "firebaselist"
 typealias Utils = Utilities
 abstract class Utilities {
     companion object {
@@ -76,7 +76,34 @@ abstract class Utilities {
                 return deserializeTaskList(text)
             return listOf()
         }
-
+        fun loadLastFirebaseListFromFile(
+            context: Context,
+            filename: String = firebaseListDefaultFileName) : List<Task>
+        {
+            val file = File(context.filesDir, filename)
+            if (file.exists()) {
+                // TODO: This is probably gonna need some error handling,
+                // maybe show a dialog that says unable to load existing task-list
+                // or something, and then assume it's all empty. Use exception-handling
+                // for that, probably.
+                val text = file.readText()
+                if (text.isNotEmpty()) {
+                    return deserializeTaskList(text)
+                }
+            }
+            return listOf()
+        }
+        fun writeLastFirebaseListToFile(
+            context: Context,
+            taskList: List<Task>,
+            filename: String = firebaseListDefaultFileName)
+        {
+            val file = context.openFileOutput(filename, AppCompatActivity.MODE_PRIVATE)
+            val writer = file.bufferedWriter()
+            writer.write(serializeTaskList(taskList))
+            writer.flush()
+            file.close()
+        }
         fun clearTaskListStorage(context: Context) {
             val file = File(context.filesDir, taskListDefaultFileName)
             if (file.exists())
