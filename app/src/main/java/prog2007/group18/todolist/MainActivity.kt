@@ -1,5 +1,6 @@
 package prog2007.group18.todolist
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
@@ -26,11 +27,6 @@ import com.google.firebase.database.ktx.database
 import com.google.firebase.ktx.Firebase
 
 class MainActivity : AppCompatActivity() {
-    companion object {
-        private const val firebaseDbRepo = "https://todolist-a4182-default-rtdb.europe-west1.firebasedatabase.app/"
-        // Change this to "" if using the release config?
-        private const val firebaseDirName = "erlend-testing"
-    }
     private var dataListenerAdded = false
     // Don't use directly
     private lateinit var _loadedPreferences: PersistentPreferences
@@ -72,6 +68,8 @@ class MainActivity : AppCompatActivity() {
     private val _taskListInternal = mutableListOf<Task>()
     // This makes a copy, since we are not allowed to access the internal data directly.
     val taskList get() = _taskListInternal.map{ it.copy() }
+
+    @SuppressLint("NotifyDataSetChanged")
     private fun taskListNotifyChange(pushToOnline: Boolean = true) {
         recyclerView.post {
             recyclerAdapter.notifyDataSetChanged()
@@ -82,29 +80,24 @@ class MainActivity : AppCompatActivity() {
         } else {
             Utils.writeTaskListToFile(this, taskList)
         }
-        if(checkIfLoggedIn()){
+        if (isLoggedIn) {
             println("You are logged in on user " + Firebase.auth.currentUser?.email)
         }
-        if (checkIfLoggedIn()  && pushToOnline && isOnline(this)) {
+        if (isLoggedIn  && pushToOnline && isOnline(this)) {
             // Only run if we are logged in?
-            if(dataListenerAdded == false){
+            if (!dataListenerAdded){
                 setupFirebaseDb()
                 dataListenerAdded = true
                 firebaseDir.addValueEventListener(firebaseDbValueListener)
             }
             val task = firebaseDir.setValue(Utils.serializeTaskList(taskList))
             if (task.isSuccessful) {
-
                 Utils.writeLastFirebaseListToFile(this, taskList)
             }
             if (!task.isSuccessful) {
                 Log.e("TodoList", "Unable to push updates online.")
             }
         }
-    }
-    private fun checkIfLoggedIn() : Boolean{
-        val user = Firebase.auth.currentUser
-        return user != null
     }
     private fun taskListAdd(task: Task) = taskListAdd(listOf(task))
     private fun taskListAdd(newTasks: List<Task>, pushToOnline: Boolean = true) {
@@ -148,26 +141,18 @@ class MainActivity : AppCompatActivity() {
 
     private val firebaseDbValueListener = object : ValueEventListener {
         override fun onDataChange(snapshot: DataSnapshot) {
-            if(snapshot != null){
-
-                var loadedList = Utils.deserializeTaskList(snapshot.value as String)
-                //lastLoadedList = loadedList.toMutableList()
-                //Only problem here is that the newly synced list doesn't get pushed online
-                loadedList
+            if(snapshot.value != null){
+                val loadedList = Utils.deserializeTaskList(snapshot.value as String)
+                // Only problem here is that the newly synced list doesn't get pushed online
                 val syncedList = sync(loadedList)
                 if(loadedList != syncedList){
                     taskListOverwrite(syncedList, pushToOnline = true)
-                } else{taskListOverwrite(syncedList, pushToOnline = false)}
+                } else{
+                    taskListOverwrite(syncedList, pushToOnline = false)
+                }
             }
-
         }
         override fun onCancelled(error: DatabaseError) {}
-    }
-    private fun addValueListener(){
-        dataListenerAdded = true
-        Firebase.auth.currentUser?.uid!!
-
-
     }
     //For tasks in both lists, use timestamp and add the newest one to the final task list
 
@@ -183,10 +168,9 @@ class MainActivity : AppCompatActivity() {
 
         //Create new FinalList that starts with all tasks from local storage
         //
-        var bufferList = mutableListOf<Task>()
-
+        val bufferList = mutableListOf<Task>()
         for (task in localStoredTaskList){
-            //Those tasks that have never been uploaded to cloud from main
+            // Those tasks that have never been uploaded to cloud from main
             if(!containsTask(lastRetrievedTaskList, task)){
                 bufferList.add(task)
             }
@@ -198,7 +182,6 @@ class MainActivity : AppCompatActivity() {
             }
 
         }
-
         //Overwriting last with new
         Utils.writeLastFirebaseListToFile(this, newlyRetrievedTaskList)
         return bufferList
@@ -217,20 +200,18 @@ class MainActivity : AppCompatActivity() {
         return firebaseTask
     }
     */
-    private fun containsTask(taskList2 : List<Task>, task2 : Task) : Boolean{
-        for (task in taskList2) {
-            if(task.title ==  task2.title && task.deadline == task2.deadline){
-                return true
-            }
-        }
-        return false
-    }
+    private fun containsTask(taskList: List<Task>, task: Task): Boolean =
+        taskList.find {
+            it.title == task.title && it.deadline == task.deadline
+        } != null
     private fun toBeDeleted(taskFromNewSync : Task, localList : List<Task>, oldSyncList : List<Task>, bufferList : List<Task>) : Boolean{
-        //taskFromNewSync must be deleted if also in old sync but not in local
-        if(containsTask(oldSyncList,taskFromNewSync) && !containsTask(localList, taskFromNewSync)){
+        // taskFromNewSync must be deleted if also in old sync but not in local
+        if(containsTask(oldSyncList,taskFromNewSync) && !containsTask(localList, taskFromNewSync)) {
             return true
         }
-        if(containsTask(bufferList,taskFromNewSync)){return true}
+        if (containsTask(bufferList,taskFromNewSync)) {
+            return true
+        }
         //taskFromNewSync must not be deleted if not in old sync
         return false
 
@@ -238,11 +219,10 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        var onlineGroupButton : Button
-        onlineGroupButton= findViewById(R.id.onlineGroupButton)
-        onlineGroupButton.setOnClickListener(){
-            if(checkIfLoggedIn()){
-                val intent = Intent(this, onlineGroupActivity::class.java)
+        val onlineGroupButton: Button = findViewById(R.id.onlineGroupButton)
+        onlineGroupButton.setOnClickListener {
+            if(isLoggedIn){
+                val intent = Intent(this, OnlineGroupActivity::class.java)
                 startActivity(intent)
             }
         }
@@ -281,7 +261,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupFirebaseDb() {
         FirebaseApp.initializeApp(this)
-        firebaseDb = Firebase.database(firebaseDbRepo)
+        firebaseDb = Firebase.database(Utils.firebaseDbRepo)
         firebaseDir = firebaseDb.reference.child(Firebase.auth.currentUser?.uid!!)
 
     }
@@ -292,7 +272,7 @@ class MainActivity : AppCompatActivity() {
 
         recyclerAdapter = ListRecyclerAdapter(this, preferences.showDoneTasks)
         recyclerView = findViewById(R.id.mainList)
-        if (checkIfLoggedIn() && isOnline(this) && dataListenerAdded == false){
+        if (isLoggedIn && isOnline(this) && !dataListenerAdded){
             setupFirebaseDb()
             dataListenerAdded = true
             firebaseDir.addValueEventListener(firebaseDbValueListener)
@@ -390,7 +370,7 @@ class MainActivity : AppCompatActivity() {
 
             // If Firebase already has data, then download it.
             // Otherwise upload ours.
-            if(dataListenerAdded == false){
+            if(!dataListenerAdded){
                 setupFirebaseDb()
                 dataListenerAdded = true
                 firebaseDir.addValueEventListener(firebaseDbValueListener)

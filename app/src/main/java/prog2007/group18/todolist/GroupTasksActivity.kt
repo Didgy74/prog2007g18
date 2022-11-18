@@ -10,16 +10,12 @@ import android.net.NetworkCapabilities
 import android.os.Bundle
 import android.util.Log
 import android.view.*
-import android.widget.Button
 import android.widget.SearchView
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.firebase.ui.auth.AuthUI
-import com.firebase.ui.auth.FirebaseAuthUIActivityResultContract
-import com.firebase.ui.auth.data.model.FirebaseAuthUIAuthenticationResult
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.ktx.auth
@@ -28,13 +24,7 @@ import com.google.firebase.database.ktx.database
 import com.google.firebase.ktx.Firebase
 
 
-
-
-class groupTasksActivity : AppCompatActivity() {
-    companion object {
-        private const val firebaseDbRepo = "https://todolist-a4182-default-rtdb.europe-west1.firebasedatabase.app/"
-        // Change this to "" if using the release config?
-    }
+class GroupTasksActivity : AppCompatActivity() {
     private var dataListenerAdded = false
     // Don't use directly
     private lateinit var _loadedPreferences: PersistentPreferences
@@ -178,8 +168,8 @@ class groupTasksActivity : AppCompatActivity() {
 
     private fun setupFirebaseDb() {
         FirebaseApp.initializeApp(this)
-        firebaseDb = Firebase.database(firebaseDbRepo)
-        val groupID=intent.getStringExtra("groupID")
+        firebaseDb = Firebase.database(Utils.firebaseDbRepo)
+        val groupID = intent.getStringExtra("groupID")
         firebaseDir = firebaseDb.reference.child(groupID!!)
     }
 
@@ -189,7 +179,7 @@ class groupTasksActivity : AppCompatActivity() {
         setupFirebaseDb()
         recyclerAdapter = GroupListRecyclerAdapter(this, preferences.showDoneTasks)
         recyclerView = findViewById(R.id.mainList2)
-        if (checkIfLoggedIn() && isOnline(this) && dataListenerAdded == false){
+        if (isLoggedIn && isOnline(this) && !dataListenerAdded){
             dataListenerAdded = true
             firebaseDir.addValueEventListener(firebaseDbValueListener)
         }

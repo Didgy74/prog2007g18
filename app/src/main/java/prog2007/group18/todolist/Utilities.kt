@@ -6,10 +6,16 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
-const val firebaseListDefaultFileName = "firebaselist"
+
+
 typealias Utils = Utilities
 abstract class Utilities {
     companion object {
+
+        const val firebaseDbRepo = "https://todolist-a4182-default-rtdb.europe-west1.firebasedatabase.app/"
+        // Change this to "" if using the release config?
+        const val firebaseDirName = "erlend-testing"
+        const val firebaseListDefaultFileName = "firebaselist"
 
         fun serializeTask(task: Task) = Json.encodeToString(task)
         fun deserializeTask(string: String): Task = Json.decodeFromString(string)
@@ -78,32 +84,15 @@ abstract class Utilities {
         }
         fun loadLastFirebaseListFromFile(
             context: Context,
-            filename: String = firebaseListDefaultFileName) : List<Task>
-        {
-            val file = File(context.filesDir, filename)
-            if (file.exists()) {
-                // TODO: This is probably gonna need some error handling,
-                // maybe show a dialog that says unable to load existing task-list
-                // or something, and then assume it's all empty. Use exception-handling
-                // for that, probably.
-                val text = file.readText()
-                if (text.isNotEmpty()) {
-                    return deserializeTaskList(text)
-                }
-            }
-            return listOf()
-        }
+            filename: String = firebaseListDefaultFileName) =
+                loadTaskListFromFile(context, filename)
+
         fun writeLastFirebaseListToFile(
             context: Context,
             taskList: List<Task>,
-            filename: String = firebaseListDefaultFileName)
-        {
-            val file = context.openFileOutput(filename, AppCompatActivity.MODE_PRIVATE)
-            val writer = file.bufferedWriter()
-            writer.write(serializeTaskList(taskList))
-            writer.flush()
-            file.close()
-        }
+            filename: String = firebaseListDefaultFileName) =
+                writeTaskListToFile(context, taskList, filename)
+
         fun clearTaskListStorage(context: Context) {
             val file = File(context.filesDir, taskListDefaultFileName)
             if (file.exists())

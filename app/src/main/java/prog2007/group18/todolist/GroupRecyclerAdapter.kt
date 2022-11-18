@@ -8,22 +8,25 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
-class GroupRecyclerAdapter (private val Groups: MutableList<Pair<String,Int>>, private val context: Context) : RecyclerView.Adapter <GroupRecyclerAdapter.GroupViewHolder>(){
-    class GroupViewHolder(v: View) : RecyclerView.ViewHolder(v){
+class GroupRecyclerAdapter(
+    private val groups: MutableList<Pair<String,Int>>,
+    private val context: Context):
+    RecyclerView.Adapter <GroupRecyclerAdapter.GroupViewHolder>()
+{
+    class GroupViewHolder(v: View) : RecyclerView.ViewHolder(v) {
         var view: View = v
         var groupName: String = ""
         fun bindGroup(groupName: String, groupID: Int, context: Context){
             val groupInfo = view.findViewById<TextView>(R.id.groupDataTextView)
             this.groupName = groupName
-            groupInfo.text = "Group name: "+groupName + " Group ID: " + groupID
+            groupInfo.text = "Group name: $groupName Group ID: $groupID"
 
-            println("Teeeeeest + " + groupID)
+            println("Teeeeeest + $groupID")
 
             groupInfo.setOnClickListener {
-                val intent2 = Intent(context,groupTasksActivity::class.java)
-                intent2.putExtra("groupID",groupID.toString())
-
-                context.startActivity(intent2)
+                val intent = Intent(context, GroupTasksActivity::class.java)
+                intent.putExtra("groupID",groupID.toString())
+                context.startActivity(intent)
             }
         }
     }
@@ -31,16 +34,12 @@ class GroupRecyclerAdapter (private val Groups: MutableList<Pair<String,Int>>, p
         return GroupViewHolder(
             LayoutInflater.from(parent.context)
             .inflate(R.layout.group_recyclerview_item_row,parent, false))
-
     }
     override fun onBindViewHolder(holder: GroupViewHolder, position: Int) {
-        var group = Groups[position]
+        val group = groups[position]
         holder.bindGroup(group.first, group.second, context)
-        println("Test: " + position)
+        println("Test: $position")
     }
 
-    override fun getItemCount(): Int {
-        return Groups.count()
-    }
-
+    override fun getItemCount() = groups.count()
 }
