@@ -75,7 +75,7 @@ class ListRecyclerAdapter(
     }
 }
 class GroupListRecyclerAdapter(
-    private val groupTasksActivity : groupTasksActivity,
+    private val groupTasksActivity : GroupTasksActivity,
     showDoneTasks: Boolean) :
     RecyclerView.Adapter<GroupListRecyclerAdapter.ViewHolder>() {
 
