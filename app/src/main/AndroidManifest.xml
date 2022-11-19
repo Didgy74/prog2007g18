@@ -16,14 +16,14 @@
         android:theme="@style/Theme.TodoList"
         tools:targetApi="31">
         <activity
-            android:name=".groupTasksActivity"
+            android:name=".GroupTasksActivity"
             android:exported="false">
             <meta-data
                 android:name="android.app.lib_name"
                 android:value="" />
         </activity>
         <activity
-            android:name=".onlineGroupActivity"
+            android:name=".OnlineGroupActivity"
             android:exported="false">
             <meta-data
                 android:name="android.app.lib_name"
