@@ -264,7 +264,7 @@ class MainActivity : AppCompatActivity() {
         val name = intent.getStringExtra("name")
 
         // Creating the new Fragment with the name passed in.
-        val fragment = TestFragment.newInstance(name)
+        //val fragment = TestFragment.newInstance(name)
 
     }
     override fun onCreate(savedInstanceState: Bundle?) {
