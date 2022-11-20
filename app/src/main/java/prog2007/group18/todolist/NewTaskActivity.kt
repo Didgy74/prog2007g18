@@ -128,7 +128,7 @@ class NewTaskActivity : AppCompatActivity() {
                 requireContext(),
                 this,
                 deadline.year,
-                deadline.month.value,
+                deadline.month.value - 1,
                 deadline.dayOfMonth)
         }
 
@@ -140,7 +140,7 @@ class NewTaskActivity : AppCompatActivity() {
         override fun onDateSet(view: DatePicker, year: Int, month: Int, day: Int) {
             // Do something with the date chosen by the user
             // Month is zero-indexed for some reason.
-            (activity as NewTaskActivity).setDeadlineDate(year, month, day)
+            (activity as NewTaskActivity).setDeadlineDate(year, month + 1, day)
             dateWasSet = true
         }
     }
