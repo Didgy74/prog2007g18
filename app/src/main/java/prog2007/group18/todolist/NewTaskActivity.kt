@@ -11,6 +11,7 @@ import android.os.Bundle
 import android.text.format.DateFormat
 import android.view.View
 import android.widget.AutoCompleteTextView
+import android.widget.CheckBox
 import android.widget.DatePicker
 import android.widget.RadioButton
 import android.widget.TextView
@@ -36,14 +37,17 @@ class NewTaskActivity : AppCompatActivity() {
     }
 
     private fun setCurrentDateTimeAsDeadline() {
-        val c = Calendar.getInstance()
-        val hour = c.get(Calendar.HOUR_OF_DAY)
-        val minute = c.get(Calendar.MINUTE)
-        setDeadlineTime(hour, minute)
-        val year = c.get(Calendar.YEAR)
-        val month = c.get(Calendar.MONTH)
-        val day = c.get(Calendar.DAY_OF_MONTH)
-        setDeadlineDate(year, month, day)
+        val now = LocalDateTime.now()
+            .withSecond(0)
+            .withNano(0)
+            .plusMinutes(1)
+        setDeadlineTime(
+            now.hour,
+            now.minute)
+        setDeadlineDate(
+            now.year,
+            now.month.value,
+            now.dayOfMonth)
     }
 
     private fun updateDeadlineLabel() {
@@ -71,6 +75,9 @@ class NewTaskActivity : AppCompatActivity() {
         // We should likely have some checks here, to see if this would be a valid task
         // and then show a little error prompt if i.e title is empty
         val titleInput = findViewById<AutoCompleteTextView>(R.id.titleInput)
+
+        val useNotification = findViewById<CheckBox>(R.id.checkBoxNotification)
+
         val frequency = chosenFrequency()
 
         val goalInput = findViewById<TextInputEditText>(R.id.goalInput)
@@ -82,9 +89,11 @@ class NewTaskActivity : AppCompatActivity() {
         }
         val intent = Task(
                 title = titleInput.text.toString(),
-                deadline, frequency = frequency,
+                deadline,
+                frequency = frequency,
                 progressTask = findViewById<RadioButton>(R.id.radioButton6).isChecked,
-                goal = goal)
+                goal = goal,
+                notify = useNotification.isChecked)
             .toIntent()
 
         setResult(Activity.RESULT_OK, intent)

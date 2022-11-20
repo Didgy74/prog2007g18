@@ -19,10 +19,8 @@ import com.firebase.ui.auth.AuthUI
 import com.firebase.ui.auth.FirebaseAuthUIActivityResultContract
 import com.firebase.ui.auth.data.model.FirebaseAuthUIAuthenticationResult
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.database.*
-import com.google.firebase.database.ktx.database
 import com.google.firebase.ktx.Firebase
 import java.time.LocalDateTime
 
@@ -224,14 +222,12 @@ class MainActivity : AppCompatActivity() {
         if(containsTask(bufferList,taskFromNewSync)){return true}
         //taskFromNewSync must not be deleted if not in old sync
         return false
-
     }
     private fun calendarListSetUp(){
         val name = intent.getStringExtra("name")
 
         // Creating the new Fragment with the name passed in.
         val fragment = CalendarFragment.newInstance("Testing")
-
     }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

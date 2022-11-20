@@ -1,21 +1,14 @@
 package prog2007.group18.todolist
 
-import android.content.Context
 import android.content.Intent
 import android.os.Parcelable
-import androidx.appcompat.app.AppCompatActivity
 import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.encodeToJsonElement
-import java.io.File
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -37,7 +30,8 @@ data class Task(
     var progressTask : Boolean = false,
     var progress : Int = 0,
     var goal : Int = 0,
-    var frequency : Frequency = Frequency.oneTime,)
+    var frequency : Frequency = Frequency.oneTime,
+    var notify: Boolean = false)
     : Parcelable
 {
     fun toIntent() = Intent().apply {
@@ -55,25 +49,31 @@ data class Task(
         fun formattedDeadline(input: LocalDateTime): String =
             input.format(DateTimeFormatter.ofPattern("uuuu LLLL d - HH:mm"))
 
-        fun exampleTasks() = listOf(
-            Task(
-                "Do laundry",
-                LocalDateTime.now()),
-            Task(
-                "Go to church",
-                LocalDateTime.now()),
-            Task(
-                "Go to school",
-                LocalDateTime.now()),
-            Task(
-                "Pray to God",
-                LocalDateTime.now()),
-            Task(
-                "Perform dinner prayer",
-                LocalDateTime.now()),
-            Task(
-                "Smite the heathens",
-                LocalDateTime.now()),)
+        fun exampleTasks(): List<Task> {
+            val now = LocalDateTime.now()
+            return listOf(
+                Task(
+                    "Do laundry",
+                    now.plusSeconds(10),
+                    notify = true),
+                Task(
+                    "Go to church",
+                    now.plusSeconds(20),
+                    notify = true),
+                Task(
+                    "Go to school",
+                    now),
+                Task(
+                    "Pray to God",
+                    now),
+                Task(
+                    "Perform dinner prayer",
+                    now),
+                Task(
+                    "Smite the heathens",
+                    now),
+            )
+        }
     }
 }
 
