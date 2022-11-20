@@ -105,6 +105,7 @@ class TodoListApp : Application() {
             PeriodicWorkRequestBuilder<NotificationRefreshWorker>(
                 notificationWorkerRefreshPeriod,
                 notificationWorkerFlexPeriod)
+                .setInitialDelay(notificationWorkerRefreshPeriod)
                 .build()
         WorkManager
             .getInstance(this)
