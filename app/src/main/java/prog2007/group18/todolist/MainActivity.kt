@@ -13,6 +13,7 @@ import android.widget.SearchView
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.firebase.ui.auth.AuthUI
@@ -73,11 +74,12 @@ class MainActivity : AppCompatActivity() {
         recyclerView.post {
             recyclerAdapter.notifyDataSetChanged()
         }
+        calendarListSetUp()
         if (checkIfLoggedIn()  && pushToOnline && isOnline(this)) {
             // Only run if we are logged in?
             if (dataListenerAdded == false) {
                 setupFirebaseDb()
-                dataListenerAdded = true
+                //dataListenerAdded = true
                 firebaseDir.addValueEventListener(firebaseDbValueListener)
             }
             val task = firebaseDir.setValue(Utils.serializeTaskList(taskList))
@@ -118,7 +120,7 @@ class MainActivity : AppCompatActivity() {
     private val firebaseDbValueListener = object : ValueEventListener {
         override fun onDataChange(snapshot: DataSnapshot) {
             if(snapshot != null){
-
+                dataListenerAdded = true
                 var loadedList = Utils.deserializeTaskList(snapshot.value as String)
                 //lastLoadedList = loadedList.toMutableList()
                 val syncedList = sync(loadedList)
@@ -132,11 +134,7 @@ class MainActivity : AppCompatActivity() {
         }
         override fun onCancelled(error: DatabaseError) {}
     }
-    private fun addValueListener(){
-        dataListenerAdded = true
-        Firebase.auth.currentUser?.uid!!
 
-    }
     private fun setNewDeadlines(taskList : List<Task>){
         for(task in taskList){
             if(LocalDateTime.now().isAfter(task.deadline)){
@@ -223,16 +221,53 @@ class MainActivity : AppCompatActivity() {
         //taskFromNewSync must not be deleted if not in old sync
         return false
     }
+    //Add variable for previous/next month
+    var monthInCalendar : Long = 0
     private fun calendarListSetUp(){
-        val name = intent.getStringExtra("name")
+        //var newCalendar : CalendarFragment =
+        // getting the recyclerview by its id
+        val recyclerview = findViewById<RecyclerView>(R.id.calendarView)
+        val localStoredTaskList = Utils.loadTaskListFromFile(this)
+        // this creates a vertical layout Manager
+        recyclerview.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
+        recyclerView.addItemDecoration(
+            DividerItemDecoration(
+                recyclerView.context, DividerItemDecoration.HORIZONTAL
+            )
+        )
+        //Plussing with monthInCalendar so that we can get the previous and next months if those buttons are pressed
+        var currentMonth = LocalDateTime.now().month
+        var eachDate = LocalDateTime.now() //.plusMonths(monthInCalendar)
+        var longZero : Long = 0
+        if(monthInCalendar != longZero){
+            currentMonth = LocalDateTime.now().month.plus(monthInCalendar)
+            eachDate = LocalDateTime.now().plusMonths(monthInCalendar)
+            eachDate = eachDate.withDayOfMonth(1)
+        }
 
-        // Creating the new Fragment with the name passed in.
-        val fragment = CalendarFragment.newInstance("Testing")
+        var  listOfRemainingDays : MutableList<CalendarDay> = mutableListOf()
+        while(currentMonth ==  eachDate.month){
+            var tasksPerDay = 0
+            for (task in localStoredTaskList.filter { it -> it.deadline.month == eachDate.month && it.deadline.dayOfMonth == eachDate.dayOfMonth }) {
+                tasksPerDay++
+            }
+            listOfRemainingDays.add(CalendarDay(eachDate,tasksPerDay))
+            eachDate = eachDate.plusDays(1)
+        }
+
+
+
+        // This will pass the ArrayList to our Adapter
+        val adapter = CalendarAdapter(listOfRemainingDays, this)
+
+        // Setting the Adapter with the recyclerview
+        recyclerview.adapter = adapter
+
     }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        calendarListSetUp()
         var onlineGroupButton : Button
         onlineGroupButton= findViewById(R.id.onlineGroupButton)
         onlineGroupButton.setOnClickListener(){
@@ -240,6 +275,19 @@ class MainActivity : AppCompatActivity() {
                 val intent = Intent(this, OnlineGroupActivity::class.java)
                 startActivity(intent)
             }
+        }
+
+        var previousMonthButton : Button
+        previousMonthButton = findViewById(R.id.previousMonthButton)
+        previousMonthButton.setOnClickListener(){
+            monthInCalendar--
+            calendarListSetUp()
+        }
+        var nextMonthButton : Button
+        nextMonthButton = findViewById(R.id.nextMonthButton)
+        nextMonthButton.setOnClickListener(){
+            monthInCalendar++
+            calendarListSetUp()
         }
         initialSetup()
     }
@@ -285,7 +333,7 @@ class MainActivity : AppCompatActivity() {
         recyclerView = findViewById(R.id.mainList)
         if (todoListApp.isLoggedIn && isOnline(this) && !dataListenerAdded){
             setupFirebaseDb()
-            dataListenerAdded = true
+            //dataListenerAdded = true
             firebaseDir.addValueEventListener(firebaseDbValueListener)
         }
 
@@ -298,6 +346,8 @@ class MainActivity : AppCompatActivity() {
         // Setup the FAB that opens NewTaskActivity
         val fabAdd = findViewById<FloatingActionButton>(R.id.fabAdd)
         fabAdd.setOnClickListener { beginNewTaskActivity() }
+
+        calendarListSetUp()
 
         // Setup searchview
         val searchView = findViewById<SearchView>(R.id.search)
@@ -383,7 +433,7 @@ class MainActivity : AppCompatActivity() {
             // Otherwise upload ours.
             if(dataListenerAdded == false){
                 setupFirebaseDb()
-                dataListenerAdded = true
+                //dataListenerAdded = true
                 firebaseDir.addValueEventListener(firebaseDbValueListener)
             }
             updateMenuLabels()
