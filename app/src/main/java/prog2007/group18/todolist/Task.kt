@@ -23,13 +23,21 @@ const val taskListDefaultFileName = "tasklist"
 
 // It's important that this class, and any members is serializable
 // in order to send the task across network or store to file.
+enum class Frequency {
+    oneTime, daily, weekly
+}
+
 @Serializable
 @Parcelize
 data class Task(
     var title: String,
     @Serializable(with = LocalDateTimeSerializer::class)
     var deadline: LocalDateTime,
-    var done: Boolean = false,)
+    var done: Boolean = false,
+    var progressTask : Boolean = false,
+    var progress : Int = 0,
+    var goal : Int = 0,
+    var frequency : Frequency = Frequency.oneTime,)
     : Parcelable
 {
     fun toIntent() = Intent().apply {

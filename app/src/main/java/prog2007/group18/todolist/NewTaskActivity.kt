@@ -12,9 +12,11 @@ import android.text.format.DateFormat
 import android.view.View
 import android.widget.AutoCompleteTextView
 import android.widget.DatePicker
+import android.widget.RadioButton
 import android.widget.TextView
 import android.widget.TimePicker
 import androidx.fragment.app.DialogFragment
+import com.google.android.material.textfield.TextInputEditText
 import java.time.LocalDateTime
 
 class NewTaskActivity : AppCompatActivity() {
@@ -69,14 +71,30 @@ class NewTaskActivity : AppCompatActivity() {
         // We should likely have some checks here, to see if this would be a valid task
         // and then show a little error prompt if i.e title is empty
         val titleInput = findViewById<AutoCompleteTextView>(R.id.titleInput)
+        val frequency = chosenFrequency()
 
+        val goalInput = findViewById<TextInputEditText>(R.id.goalInput)
+        var goal : Int
+        if(findViewById<RadioButton>(R.id.radioButton6).isChecked){
+            goal = goalInput.text.toString().toInt()
+        } else {
+            goal = 0
+        }
         val intent = Task(
                 title = titleInput.text.toString(),
-                deadline)
+                deadline, frequency = frequency,
+                progressTask = findViewById<RadioButton>(R.id.radioButton6).isChecked,
+                goal = goal)
             .toIntent()
 
         setResult(Activity.RESULT_OK, intent)
         finish()
+    }
+
+    fun chosenFrequency() : Frequency{
+        if(findViewById<RadioButton>(R.id.radioButton).isChecked) return Frequency.oneTime
+        else if(findViewById<RadioButton>(R.id.radioButton2).isChecked) return Frequency.daily
+        else return Frequency.weekly
     }
 
     fun onSetDeadlinePressed(view: View) {
