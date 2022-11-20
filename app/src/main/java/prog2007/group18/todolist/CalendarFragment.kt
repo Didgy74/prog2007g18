@@ -5,6 +5,7 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
 
 // TODO: Rename parameter arguments, choose names that match
 // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
@@ -28,7 +29,13 @@ class CalendarFragment : Fragment() {
             param2 = it.getString(ARG_PARAM2)
         }
     }
-
+    lateinit var textView: TextView
+    override fun onViewCreated(view : View, savedInstanceState : Bundle?) {
+        var textView = view.findViewById<TextView>(R.id.calendarText)
+        textView.text = "Testing from fragment"
+        //ImageView imageView = (ImageView) getView().findViewById(R.id.foo);
+        // or  (ImageView) view.findViewById(R.id.foo);
+    }
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -38,6 +45,7 @@ class CalendarFragment : Fragment() {
     }
 
     companion object {
+        const val ARG_NAME = "name"
         /**
          * Use this factory method to create a new instance of
          * this fragment using the provided parameters.
@@ -48,12 +56,15 @@ class CalendarFragment : Fragment() {
          */
         // TODO: Rename and change types and number of parameters
         @JvmStatic
-        fun newInstance(param1: String, param2: String) =
-            CalendarFragment().apply {
-                arguments = Bundle().apply {
-                    putString(ARG_PARAM1, param1)
-                    putString(ARG_PARAM2, param2)
-                }
-            }
+        fun newInstance(name : String): CalendarFragment {
+        val fragment = CalendarFragment()
+
+        val bundle = Bundle().apply {
+            putString(ARG_NAME, name)
+        }
+        //textView.text
+        fragment.arguments = bundle
+        return fragment
+        }
     }
 }
