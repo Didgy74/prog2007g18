@@ -11,10 +11,6 @@ import java.io.File
 typealias Utils = Utilities
 abstract class Utilities {
     companion object {
-
-        const val firebaseDbRepo = "https://todolist-a4182-default-rtdb.europe-west1.firebasedatabase.app/"
-        // Change this to "" if using the release config?
-        const val firebaseDirName = "erlend-testing"
         const val firebaseListDefaultFileName = "firebaselist"
 
         fun serializeTask(task: Task) = Json.encodeToString(task)

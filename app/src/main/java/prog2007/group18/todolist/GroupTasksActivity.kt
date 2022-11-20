@@ -25,6 +25,8 @@ import com.google.firebase.ktx.Firebase
 
 
 class GroupTasksActivity : AppCompatActivity() {
+    val todoListApp get() = application as TodoListApp
+
     private var dataListenerAdded = false
     // Don't use directly
     private lateinit var _loadedPreferences: PersistentPreferences
@@ -167,10 +169,10 @@ class GroupTasksActivity : AppCompatActivity() {
     }
 
     private fun setupFirebaseDb() {
-        FirebaseApp.initializeApp(this)
-        firebaseDb = Firebase.database(Utils.firebaseDbRepo)
+        //FirebaseApp.initializeApp(this)
+        //firebaseDb = Firebase.database(Utils.firebaseDbRepo)
         val groupID = intent.getStringExtra("groupID")
-        firebaseDir = firebaseDb.reference.child(groupID!!)
+        firebaseDir = todoListApp.firebaseTopLevelDir.child(groupID!!)
     }
 
     private fun initialSetup() {

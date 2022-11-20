@@ -41,7 +41,7 @@ class ListRecyclerAdapter(
         notifyDataSetChanged()
     }
 
-    private fun buildDisplayList() = mainActivity.taskList
+    private fun buildDisplayList() = mainActivity.todoListApp.taskList
         .withIndex()
         .filter{ searchFilter(it.value) }
         .filter{ if (showDone) { true } else { !it.value.done }}
@@ -100,7 +100,7 @@ class ListRecyclerAdapter(
         val checkbox = view.findViewById<CheckBox>(R.id.taskItemDoneCheckbox)
         checkbox.isChecked = task.done
         checkbox.setOnCheckedChangeListener { _, value ->
-            mainActivity.taskListSet(displayElement.index, task.copy( done = value))
+            mainActivity.todoListApp.taskListSet(displayElement.index, task.copy( done = value))
         }
         if(viewHolder.itemViewType == 1){
             val progressText = view.findViewById<TextView>(R.id.progressText)
@@ -120,7 +120,9 @@ class ListRecyclerAdapter(
                 if(task.progress >= task.goal){
                     task.done = true
                 }
-                mainActivity.taskListSet(displayElement.index, task.copy( progress = task.progress, done = task.done))
+                mainActivity.todoListApp.taskListSet(
+                    displayElement.index,
+                    task.copy(progress = task.progress, done = task.done))
             }
         }
     }

@@ -33,11 +33,12 @@ class MainActivity : AppCompatActivity() {
         // Change this to "" if using the release config?
         private const val firebaseDirName = "erlend-testing"
     }
+    val todoListApp get() = application as TodoListApp
+
     private var dataListenerAdded = false
     // Don't use directly
     private lateinit var _loadedPreferences: PersistentPreferences
     private val preferences get() = _loadedPreferences
-
 
     private fun setPreferences(new: PersistentPreferences) {
         _loadedPreferences = new
@@ -68,39 +69,21 @@ class MainActivity : AppCompatActivity() {
 
     private val isLoggedIn get() = Firebase.auth.currentUser != null
 
-    private lateinit var firebaseDb: FirebaseDatabase
     private lateinit var firebaseDir: DatabaseReference
     private lateinit var recyclerAdapter: ListRecyclerAdapter
-
-    // Don't use directly.
-    private val _taskListInternal = mutableListOf<Task>()
-    // This makes a copy, since we are not allowed to access the internal data directly.
-    val taskList get() = _taskListInternal.map{ it.copy() }
-    private fun taskListNotifyChange(pushToOnline: Boolean = true) {
+    private val taskListChangeListener: TaskListChangeListener = { taskList, pushToOnline ->
         recyclerView.post {
             recyclerAdapter.notifyDataSetChanged()
         }
-
-        if (taskList.isEmpty()) {
-            Utils.clearTaskListStorage(this)
-        } else {
-            Utils.writeTaskListToFile(this, taskList)
-        }
-
-        if(checkIfLoggedIn()){
-            println("You are logged in on user " + Firebase.auth.currentUser?.email)
-        }
-
         if (checkIfLoggedIn()  && pushToOnline && isOnline(this)) {
             // Only run if we are logged in?
-            if(dataListenerAdded == false){
+            if (dataListenerAdded == false) {
                 setupFirebaseDb()
                 dataListenerAdded = true
                 firebaseDir.addValueEventListener(firebaseDbValueListener)
             }
             val task = firebaseDir.setValue(Utils.serializeTaskList(taskList))
             if (task.isSuccessful) {
-
                 Utils.writeLastFirebaseListToFile(this, taskList)
             }
             if (!task.isSuccessful) {
@@ -108,29 +91,11 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
+
     private fun checkIfLoggedIn() : Boolean{
         val user = Firebase.auth.currentUser
         return user != null
     }
-    private fun taskListAdd(task: Task) = taskListAdd(listOf(task))
-    private fun taskListAdd(newTasks: List<Task>, pushToOnline: Boolean = true) {
-        _taskListInternal.addAll(newTasks)
-        taskListNotifyChange(pushToOnline = pushToOnline)
-    }
-    private fun taskListOverwrite(newList: List<Task>, pushToOnline: Boolean = true) {
-        _taskListInternal.clear()
-        taskListAdd(newList, pushToOnline = pushToOnline)
-    }
-    private fun taskListClear(pushToOnline: Boolean = true) =
-        taskListOverwrite(listOf(), pushToOnline = pushToOnline)
-    fun taskListSet(index: Int, newTask: Task) {
-        _taskListInternal[index] = newTask
-        taskListNotifyChange()
-    }
-    fun taskListSize() = taskList.size
-    // Returns a copy
-    fun taskListGet(index: Int): Task = taskList[index].copy()
-
     private lateinit var recyclerView: RecyclerView
 
     // This is a launcher for an Activity that will also return an
@@ -160,8 +125,10 @@ class MainActivity : AppCompatActivity() {
                 //lastLoadedList = loadedList.toMutableList()
                 val syncedList = sync(loadedList)
                 if(loadedList != syncedList){
-                    taskListOverwrite(syncedList, pushToOnline = true)
-                } else{taskListOverwrite(syncedList, pushToOnline = false)}
+                    todoListApp.taskListOverwrite(syncedList, pushToOnline = true)
+                } else{
+                    todoListApp.taskListOverwrite(syncedList, pushToOnline = false)
+                }
             }
 
         }
@@ -220,7 +187,6 @@ class MainActivity : AppCompatActivity() {
                 //TODO: newestTask = getNewestVersion(task, localStoredTaskList)
                 bufferList.add(task)
             }
-
         }
 
         //Overwriting last with new
@@ -275,7 +241,7 @@ class MainActivity : AppCompatActivity() {
         onlineGroupButton= findViewById(R.id.onlineGroupButton)
         onlineGroupButton.setOnClickListener(){
             if(checkIfLoggedIn()){
-                val intent = Intent(this, onlineGroupActivity::class.java)
+                val intent = Intent(this, OnlineGroupActivity::class.java)
                 startActivity(intent)
             }
         }
@@ -293,11 +259,11 @@ class MainActivity : AppCompatActivity() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.menuClearBtn -> {
-                taskListClear()
+                todoListApp.taskListClear()
                 true
             }
             R.id.menuAddExamplesBtn -> {
-                taskListAdd(Task.exampleTasks())
+                todoListApp.taskListAdd(Task.exampleTasks())
                 true
             }
             R.id.showDoneTasksBtn -> {
@@ -313,29 +279,25 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupFirebaseDb() {
-        FirebaseApp.initializeApp(this)
-        firebaseDb = Firebase.database(firebaseDbRepo)
-        firebaseDir = firebaseDb.reference.child(Firebase.auth.currentUser?.uid!!)
-
+        firebaseDir = todoListApp.firebaseTopLevelDir.child(Firebase.auth.currentUser!!.uid)
     }
 
     private fun initialSetup() {
         _loadedPreferences = PersistentPreferences.readFromFile(this)
 
-
         recyclerAdapter = ListRecyclerAdapter(this, preferences.showDoneTasks)
         recyclerView = findViewById(R.id.mainList)
-        if (checkIfLoggedIn() && isOnline(this) && dataListenerAdded == false){
+        if (todoListApp.isLoggedIn && isOnline(this) && !dataListenerAdded){
             setupFirebaseDb()
             dataListenerAdded = true
             firebaseDir.addValueEventListener(firebaseDbValueListener)
         }
 
-        taskListOverwrite(Utils.loadTaskListFromFile(this))
-
         // Setup the RecyclerView
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = recyclerAdapter
+
+        todoListApp.taskListAddNotifyChangeListener(taskListChangeListener)
 
         // Setup the FAB that opens NewTaskActivity
         val fabAdd = findViewById<FloatingActionButton>(R.id.fabAdd)
@@ -363,7 +325,7 @@ class MainActivity : AppCompatActivity() {
             // let's add it to our task list.
             assert(result.data != null)
             val newTask = Task.fromIntent(result.data!!)
-            taskListAdd(newTask)
+            todoListApp.taskListAdd(newTask)
         }
     }
 
@@ -388,8 +350,8 @@ class MainActivity : AppCompatActivity() {
             this.runOnUiThread {
                 snapshot.value?.let { value ->
                     val downloadedData = Utils.deserializeTaskList(value as String)
-                    Utils.writeLastFirebaseListToFile(this, taskList)
-                    taskListOverwrite(downloadedData, pushToOnline = false)
+                    Utils.writeLastFirebaseListToFile(this, todoListApp.taskList)
+                    todoListApp.taskListOverwrite(downloadedData, pushToOnline = false)
                 }
             }
         }
