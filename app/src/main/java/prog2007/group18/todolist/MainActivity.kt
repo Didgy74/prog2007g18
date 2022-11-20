@@ -24,6 +24,8 @@ import com.google.firebase.auth.ktx.auth
 import com.google.firebase.database.*
 import com.google.firebase.database.ktx.database
 import com.google.firebase.ktx.Firebase
+import java.time.LocalDateTime
+
 
 class MainActivity : AppCompatActivity() {
     companion object {
@@ -35,6 +37,8 @@ class MainActivity : AppCompatActivity() {
     // Don't use directly
     private lateinit var _loadedPreferences: PersistentPreferences
     private val preferences get() = _loadedPreferences
+
+
     private fun setPreferences(new: PersistentPreferences) {
         _loadedPreferences = new
         PersistentPreferences.writeToFile(preferences, this)
@@ -82,9 +86,11 @@ class MainActivity : AppCompatActivity() {
         } else {
             Utils.writeTaskListToFile(this, taskList)
         }
+
         if(checkIfLoggedIn()){
             println("You are logged in on user " + Firebase.auth.currentUser?.email)
         }
+
         if (checkIfLoggedIn()  && pushToOnline && isOnline(this)) {
             // Only run if we are logged in?
             if(dataListenerAdded == false){
@@ -152,8 +158,6 @@ class MainActivity : AppCompatActivity() {
 
                 var loadedList = Utils.deserializeTaskList(snapshot.value as String)
                 //lastLoadedList = loadedList.toMutableList()
-                //Only problem here is that the newly synced list doesn't get pushed online
-                loadedList
                 val syncedList = sync(loadedList)
                 if(loadedList != syncedList){
                     taskListOverwrite(syncedList, pushToOnline = true)
@@ -167,8 +171,28 @@ class MainActivity : AppCompatActivity() {
         dataListenerAdded = true
         Firebase.auth.currentUser?.uid!!
 
+    }
+    private fun setNewDeadlines(taskList : List<Task>){
+        for(task in taskList){
+            if(LocalDateTime.now().isAfter(task.deadline)){
+                if(task.frequency == Frequency.daily){
+                    task.done = false
+                    while (LocalDateTime.now().isAfter(task.deadline)){
+                        task.deadline = task.deadline.plusDays(1)
+                    }
+
+                } else if(task.frequency == Frequency.weekly){
+                    task.done = false
+                    while (LocalDateTime.now().isAfter(task.deadline)){
+                        task.deadline = task.deadline.plusDays(7)
+                    }
+                }
+            }
+        }
+
 
     }
+
     //For tasks in both lists, use timestamp and add the newest one to the final task list
 
     //Cloud tasks in last sync missing in new one should be deleted from the final list.
@@ -201,6 +225,7 @@ class MainActivity : AppCompatActivity() {
 
         //Overwriting last with new
         Utils.writeLastFirebaseListToFile(this, newlyRetrievedTaskList)
+        setNewDeadlines(bufferList)
         return bufferList
     }
     //TODO
@@ -235,9 +260,17 @@ class MainActivity : AppCompatActivity() {
         return false
 
     }
+    private fun calendarListSetUp(){
+        val name = intent.getStringExtra("name")
+
+        // Creating the new Fragment with the name passed in.
+        val fragment = TestFragment.newInstance(name)
+
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        calendarListSetUp()
         var onlineGroupButton : Button
         onlineGroupButton= findViewById(R.id.onlineGroupButton)
         onlineGroupButton.setOnClickListener(){
