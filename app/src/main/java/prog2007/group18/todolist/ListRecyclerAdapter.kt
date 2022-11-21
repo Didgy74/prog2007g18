@@ -216,6 +216,7 @@ class GroupListRecyclerAdapter(
         checkbox.isChecked = task.done
         checkbox.setOnCheckedChangeListener { _, value ->
             groupTasksActivity.taskListSet(displayElement.index, task.copy( done = value))
+            groupTasksActivity.addScore(value)
         }
         if(viewHolder.itemViewType == 1){
             val progressText = view.findViewById<TextView>(R.id.progressText)

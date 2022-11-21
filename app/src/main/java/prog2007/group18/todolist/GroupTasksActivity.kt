@@ -10,10 +10,13 @@ import android.net.NetworkCapabilities
 import android.os.Bundle
 import android.util.Log
 import android.view.*
+import android.widget.Button
 import android.widget.SearchView
+import android.widget.TextView
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -23,6 +26,7 @@ import com.google.firebase.database.*
 import com.google.firebase.database.ktx.database
 import com.google.firebase.ktx.Firebase
 import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.time.LocalDateTime
 
@@ -106,6 +110,8 @@ class GroupTasksActivity : AppCompatActivity() {
     private fun taskListOverwrite(newList: List<Task>, pushToOnline: Boolean = true) {
         _taskListInternal.clear()
         setNewDeadlines(newList)
+        setUpLeaderboard()
+        calendarListSetUp(newList)
         taskListAdd(newList, pushToOnline = pushToOnline)
     }
     private fun taskListClear(pushToOnline: Boolean = true) =
@@ -156,12 +162,63 @@ class GroupTasksActivity : AppCompatActivity() {
     }
 
 
+    var monthInCalendar : Long = 0
+    private fun calendarListSetUp(listOfTasks : List<Task>){
+        //var newCalendar : CalendarFragment =
+        // getting the recyclerview by its id
+        val recyclerview = findViewById<RecyclerView>(R.id.calendarView2)
+        // this creates a vertical layout Manager
+        recyclerview.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
+        recyclerView.addItemDecoration(
+            DividerItemDecoration(
+                recyclerView.context, DividerItemDecoration.HORIZONTAL
+            )
+        )
+        //Plussing with monthInCalendar so that we can get the previous and next months if those buttons are pressed
+        var currentMonth = LocalDateTime.now().month
+        var eachDate = LocalDateTime.now()
+        var longZero : Long = 0
+        if(monthInCalendar != longZero){
+            currentMonth = LocalDateTime.now().month.plus(monthInCalendar)
+            eachDate = LocalDateTime.now().plusMonths(monthInCalendar)
+            eachDate = eachDate.withDayOfMonth(1)
+        }
 
+        var  listOfRemainingDays : MutableList<CalendarDay> = mutableListOf()
+        while(currentMonth ==  eachDate.month){
+            var tasksPerDay = 0
+            for (task in listOfTasks.filter { it -> it.deadline.month == eachDate.month && it.deadline.dayOfMonth == eachDate.dayOfMonth }) {
+                tasksPerDay++
+            }
+            listOfRemainingDays.add(CalendarDay(eachDate,tasksPerDay))
+            eachDate = eachDate.plusDays(1)
+        }
+
+
+
+        // This will pass the ArrayList to our Adapter
+        val adapter = CalendarAdapter(listOfRemainingDays, this)
+
+        // Setting the Adapter with the recyclerview
+        recyclerview.adapter = adapter
+
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_group_tasks)
-
+        var previousMonthButton : Button
+        previousMonthButton = findViewById(R.id.previousMonthButtonOnline)
+        previousMonthButton.setOnClickListener(){
+            monthInCalendar--
+            calendarListSetUp(taskList)
+        }
+        var nextMonthButton : Button
+        nextMonthButton = findViewById(R.id.nextMonthButtonOnline)
+        nextMonthButton.setOnClickListener(){
+            monthInCalendar++
+            calendarListSetUp(taskList)
+        }
         initialSetup()
     }
 
@@ -185,6 +242,32 @@ class GroupTasksActivity : AppCompatActivity() {
             }
             else -> super.onOptionsItemSelected(item)
         }
+    }
+    fun addScore(value : Boolean){
+        if(value){
+            val groupID = intent.getStringExtra("groupID")
+            groupID!!.toInt()
+            for(firebaseGroup in listOfFirebaseGroups){
+                if(firebaseGroup.ID == groupID!!.toInt()){
+                    firebaseGroup.membersAndScores = addScore(firebaseGroup.membersAndScores)
+                }
+            }
+        }
+        setUpLeaderboard()
+        //Do this to string
+        firebaseGroups.setValue(Json.encodeToString(listOfFirebaseGroups))
+    }
+    fun addScore(leaderboard : MutableList<Pair<String, Int>>) : MutableList<Pair<String, Int>>{
+        var newLeaderboard : MutableList<Pair<String, Int>> = mutableListOf()
+        for(score in leaderboard){
+            if(score.first == Firebase.auth.currentUser?.uid!!){
+                var newScore : Int = score.second+100
+                var modifiedScore = Pair(Firebase.auth.currentUser?.uid!!,newScore)
+                newLeaderboard.add(modifiedScore)
+            }else newLeaderboard.add(score)
+
+        }
+        return newLeaderboard
     }
     private fun setNewDeadlines(taskList : List<Task>){
         for(task in taskList){
@@ -215,7 +298,26 @@ class GroupTasksActivity : AppCompatActivity() {
         firebaseDir = todoListApp.firebaseTopLevelDir.child(groupID!!)
         firebaseGroups = firebaseDb.reference.child("Groups")
     }
-
+    private fun setUpLeaderboard() {
+        var leaderboardTextView = findViewById<TextView>(R.id.leaderBoardScore)
+        var scoreText = ""
+        for(score in getGroupScores()){
+             scoreText += score.first + " : " + score.second
+        }
+        leaderboardTextView.text = scoreText
+    }
+    private fun getGroupScores() : List<Pair<String,Int>>{
+        val groupID = intent.getStringExtra("groupID")
+        groupID!!.toInt()
+        for(firebaseGroup in listOfFirebaseGroups){
+            if(firebaseGroup.ID == groupID!!.toInt()){
+                return firebaseGroup.membersAndScores
+            }
+        }
+        //Will never run if not an error
+        var emptyList : List<Pair<String,Int>> = mutableListOf()
+        return emptyList
+    }
     private fun initialSetup() {
         _loadedPreferences = PersistentPreferences.readFromFile(this)
 
@@ -246,7 +348,7 @@ class GroupTasksActivity : AppCompatActivity() {
                 return false
             }
         })
-
+        setUpLeaderboard()
     }
 
     // This is called by the NewTaskActivity when it is done.
