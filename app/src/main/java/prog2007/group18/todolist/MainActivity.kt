@@ -140,12 +140,14 @@ class MainActivity : AppCompatActivity() {
             if(LocalDateTime.now().isAfter(task.deadline)){
                 if(task.frequency == Frequency.daily){
                     task.done = false
+                    task.progress = 0
                     while (LocalDateTime.now().isAfter(task.deadline)){
                         task.deadline = task.deadline.plusDays(1)
                     }
 
                 } else if(task.frequency == Frequency.weekly){
                     task.done = false
+                    task.progress = 0
                     while (LocalDateTime.now().isAfter(task.deadline)){
                         task.deadline = task.deadline.plusDays(7)
                     }

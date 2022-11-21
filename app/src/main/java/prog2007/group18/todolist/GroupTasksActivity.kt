@@ -22,6 +22,9 @@ import com.google.firebase.auth.ktx.auth
 import com.google.firebase.database.*
 import com.google.firebase.database.ktx.database
 import com.google.firebase.ktx.Firebase
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
+import java.time.LocalDateTime
 
 
 class GroupTasksActivity : AppCompatActivity() {
@@ -29,6 +32,7 @@ class GroupTasksActivity : AppCompatActivity() {
 
     private var dataListenerAdded = false
     // Don't use directly
+    private var listOfFirebaseGroups = mutableListOf<Group>()
     private lateinit var _loadedPreferences: PersistentPreferences
     private val preferences get() = _loadedPreferences
     private fun setPreferences(new: PersistentPreferences) {
@@ -60,6 +64,7 @@ class GroupTasksActivity : AppCompatActivity() {
 
     private lateinit var firebaseDb: FirebaseDatabase
     private lateinit var firebaseDir: DatabaseReference
+    private lateinit var firebaseGroups: DatabaseReference
     private lateinit var recyclerAdapter: GroupListRecyclerAdapter
 
     // Don't use directly.
@@ -80,6 +85,7 @@ class GroupTasksActivity : AppCompatActivity() {
             if(dataListenerAdded == false){
                 setupFirebaseDb()
                 dataListenerAdded = true
+                firebaseGroups.addValueEventListener(firebaseDbValueListenerAllGroups)
                 firebaseDir.addValueEventListener(firebaseDbValueListener)
             }
             val task = firebaseDir.setValue(Utils.serializeTaskList(taskList))
@@ -99,6 +105,7 @@ class GroupTasksActivity : AppCompatActivity() {
     }
     private fun taskListOverwrite(newList: List<Task>, pushToOnline: Boolean = true) {
         _taskListInternal.clear()
+        setNewDeadlines(newList)
         taskListAdd(newList, pushToOnline = pushToOnline)
     }
     private fun taskListClear(pushToOnline: Boolean = true) =
@@ -129,13 +136,25 @@ class GroupTasksActivity : AppCompatActivity() {
 
     private val firebaseDbValueListener = object : ValueEventListener {
         override fun onDataChange(snapshot: DataSnapshot) {
-            var loadedList = Utils.deserializeTaskList(snapshot.value as String)
-            taskListOverwrite(loadedList, pushToOnline = false)
-
+            if(snapshot.exists()){
+                var loadedList = Utils.deserializeTaskList(snapshot.value as String)
+                taskListOverwrite(loadedList, pushToOnline = false)
+            }
 
         }
         override fun onCancelled(error: DatabaseError) {}
     }
+    private val firebaseDbValueListenerAllGroups = object : ValueEventListener {
+        override fun onDataChange(snapshot: DataSnapshot) {
+            if(snapshot.exists()){
+                val allGroups = Json.decodeFromString(snapshot.value as String) as List<Group>
+                listOfFirebaseGroups = allGroups.toMutableList()
+            }
+
+        }
+        override fun onCancelled(error: DatabaseError) {}
+    }
+
 
 
 
@@ -167,12 +186,34 @@ class GroupTasksActivity : AppCompatActivity() {
             else -> super.onOptionsItemSelected(item)
         }
     }
+    private fun setNewDeadlines(taskList : List<Task>){
+        for(task in taskList){
+            if(LocalDateTime.now().isAfter(task.deadline)){
+                if(task.frequency == Frequency.daily){
+                    task.done = false
+                    task.progress = 0
+                    while (LocalDateTime.now().isAfter(task.deadline)){
+                        task.deadline = task.deadline.plusDays(1)
+                    }
 
+                } else if(task.frequency == Frequency.weekly){
+                    task.done = false
+                    task.progress = 0
+                    while (LocalDateTime.now().isAfter(task.deadline)){
+                        task.deadline = task.deadline.plusDays(7)
+                    }
+                }
+            }
+        }
+
+
+    }
     private fun setupFirebaseDb() {
         //FirebaseApp.initializeApp(this)
-        //firebaseDb = Firebase.database(Utils.firebaseDbRepo)
+        firebaseDb = Firebase.database(TodoListApp.firebaseDbRepoUrl)
         val groupID = intent.getStringExtra("groupID")
         firebaseDir = todoListApp.firebaseTopLevelDir.child(groupID!!)
+        firebaseGroups = firebaseDb.reference.child("Groups")
     }
 
     private fun initialSetup() {
@@ -184,6 +225,7 @@ class GroupTasksActivity : AppCompatActivity() {
         if (isLoggedIn && isOnline(this) && !dataListenerAdded){
             dataListenerAdded = true
             firebaseDir.addValueEventListener(firebaseDbValueListener)
+            firebaseGroups.addValueEventListener(firebaseDbValueListenerAllGroups)
         }
 
 

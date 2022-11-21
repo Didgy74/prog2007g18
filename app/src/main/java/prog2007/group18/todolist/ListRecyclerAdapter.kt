@@ -95,6 +95,9 @@ class ListRecyclerAdapter(
             val frameLayout = view.findViewById<FrameLayout>(R.id.frameLayout)
             frameLayout.setBackgroundResource(R.drawable.taskfragment_frame_red)
             //deadlineLabel.text = "Deadline has passed. Too late!"
+        }else{
+            val frameLayout = view.findViewById<FrameLayout>(R.id.frameLayout)
+            frameLayout.setBackgroundResource(R.drawable.taskfragment_frame)
         }
         // Setup the checkbox
         val checkbox = view.findViewById<CheckBox>(R.id.taskItemDoneCheckbox)
@@ -161,13 +164,29 @@ class GroupListRecyclerAdapter(
     override fun getItemCount() = buildDisplayList().size
     override fun getItemId(position: Int): Long = buildDisplayList()[position].index.toLong()
 
+    override fun getItemViewType(position: Int): Int {
+        val displayElement = buildDisplayList()[position]
+        val task = displayElement.value
+        if(!task.progressTask){
+            return 0
+        } else {
+            return 1
+        }
+
+    }
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {}
 
     override fun onCreateViewHolder(viewGroup: ViewGroup, viewType: Int): ViewHolder {
         // Create a new view, which defines the UI of the list item
-        val view = LayoutInflater.from(viewGroup.context)
-            .inflate(R.layout.task_item, viewGroup, false)
-        return ViewHolder(view)
+        if(viewType == 0){
+            var view = LayoutInflater.from(viewGroup.context)
+                .inflate(R.layout.task_item, viewGroup, false)
+            return ViewHolder(view)
+        } else{
+            var view = LayoutInflater.from(viewGroup.context)
+                .inflate(R.layout.progress_task_item, viewGroup, false)
+            return ViewHolder(view)
+        }
     }
 
     override fun onBindViewHolder(viewHolder: ViewHolder, position: Int) {
@@ -184,10 +203,12 @@ class GroupListRecyclerAdapter(
         val deadlineLabel = view.findViewById<TextView>(R.id.taskItemDeadline)
         deadlineLabel.text = task.formattedDeadline()
 
-        if((LocalDateTime.now()).isAfter(task.deadline)){
+        if(LocalDateTime.now().isAfter(task.deadline)){
             val frameLayout = view.findViewById<FrameLayout>(R.id.frameLayout)
             frameLayout.setBackgroundResource(R.drawable.taskfragment_frame_red)
-            deadlineLabel.text = "Deadline has passed. Too late!"
+        }else{
+            val frameLayout = view.findViewById<FrameLayout>(R.id.frameLayout)
+            frameLayout.setBackgroundResource(R.drawable.taskfragment_frame)
         }
 
         // Setup the checkbox
@@ -196,6 +217,28 @@ class GroupListRecyclerAdapter(
         checkbox.setOnCheckedChangeListener { _, value ->
             groupTasksActivity.taskListSet(displayElement.index, task.copy( done = value))
         }
+        if(viewHolder.itemViewType == 1){
+            val progressText = view.findViewById<TextView>(R.id.progressText)
+            progressText.text = task.progress.toString() + "/" + task.goal.toString()
 
+            val progressBar = view.findViewById<ProgressBar>(R.id.progressBar)
+            var progressPercent : Float = (task.progress.toFloat()/task.goal.toFloat())*100
+            progressBar.setProgress(progressPercent.roundToInt())
+
+            val button = view.findViewById<Button>(R.id.addToProgress)
+            val progressInput = view.findViewById<TextInputEditText>(R.id.addValue)
+            button.setOnClickListener(){
+                task.progress += progressInput.text.toString().toInt()
+                progressText.text = task.progress.toString() + "/" + task.goal.toString()
+                progressPercent = (progressInput.text.toString().toInt()/task.goal.toFloat())*100
+                progressBar.incrementProgressBy(progressPercent.roundToInt())
+                if(task.progress >= task.goal){
+                    task.done = true
+                }
+                groupTasksActivity.todoListApp.taskListSet(
+                    displayElement.index,
+                    task.copy(progress = task.progress, done = task.done))
+            }
+        }
     }
 }
