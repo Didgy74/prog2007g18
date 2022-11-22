@@ -120,6 +120,10 @@ class GroupTasksActivity : AppCompatActivity() {
         _taskListInternal[index] = newTask
         taskListNotifyChange()
     }
+    fun taskListRemove(index: Int, pushToOnline: Boolean = true) {
+        _taskListInternal.removeAt(index)
+        taskListNotifyChange(pushToOnline = pushToOnline)
+    }
     fun taskListSize() = taskList.size
     // Returns a copy
     fun taskListGet(index: Int): Task = taskList[index].copy()
