@@ -25,7 +25,6 @@ import com.google.firebase.database.*
 import com.google.firebase.ktx.Firebase
 import java.time.LocalDateTime
 
-
 class MainActivity : AppCompatActivity() {
     companion object {
         private const val firebaseDbRepo = "https://todolist-a4182-default-rtdb.europe-west1.firebasedatabase.app/"
@@ -331,7 +330,10 @@ class MainActivity : AppCompatActivity() {
     private fun initialSetup() {
         _loadedPreferences = PersistentPreferences.readFromFile(this)
 
-        recyclerAdapter = ListRecyclerAdapter(this, preferences.showDoneTasks)
+        recyclerAdapter = ListRecyclerAdapter(
+            { todoListApp.taskList },
+            { index, task -> todoListApp.taskListSet(index, task) },
+            preferences.showDoneTasks)
         recyclerView = findViewById(R.id.mainList)
         if (todoListApp.isLoggedIn && isOnline(this) && !dataListenerAdded){
             setupFirebaseDb()
@@ -403,7 +405,6 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
-
 
         Firebase.auth.signOut()
         setPreferences(preferences.copy(prefersOnline = false))

@@ -1,6 +1,5 @@
 package prog2007.group18.todolist
 
-import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -17,7 +16,8 @@ import kotlin.math.roundToInt
 // This is the data-adapter that our RecyclerView uses
 // to construct its Views. It just points to our list of Tasks.
 class ListRecyclerAdapter(
-    private val mainActivity: MainActivity,
+    private val getTaskList: () -> List<Task>,
+    private val setTaskListElement: (index: Int, newTask: Task) -> Unit,
     showDoneTasks: Boolean) :
     RecyclerView.Adapter<ListRecyclerAdapter.ViewHolder>() {
 
@@ -41,7 +41,7 @@ class ListRecyclerAdapter(
         notifyDataSetChanged()
     }
 
-    private fun buildDisplayList() = mainActivity.todoListApp.taskList
+    private fun buildDisplayList() = getTaskList()
         .withIndex()
         .filter{ searchFilter(it.value) }
         .filter{ if (showDone) { true } else { !it.value.done }}
@@ -103,7 +103,7 @@ class ListRecyclerAdapter(
         val checkbox = view.findViewById<CheckBox>(R.id.taskItemDoneCheckbox)
         checkbox.isChecked = task.done
         checkbox.setOnCheckedChangeListener { _, value ->
-            mainActivity.todoListApp.taskListSet(displayElement.index, task.copy( done = value))
+            setTaskListElement(displayElement.index, task.copy( done = value))
         }
         if(viewHolder.itemViewType == 1){
             val progressText = view.findViewById<TextView>(R.id.progressText)
@@ -123,7 +123,7 @@ class ListRecyclerAdapter(
                 if(task.progress >= task.goal){
                     task.done = true
                 }
-                mainActivity.todoListApp.taskListSet(
+                setTaskListElement(
                     displayElement.index,
                     task.copy(progress = task.progress, done = task.done))
             }
