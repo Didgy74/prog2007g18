@@ -1,10 +1,11 @@
 package prog2007.group18.todolist
 
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.view.MenuItem
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
+import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -15,7 +16,7 @@ import com.google.firebase.ktx.Firebase
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import java.time.LocalDateTime
+
 
 private const val firebaseDbRepo = "https://todolist-a4182-default-rtdb.europe-west1.firebasedatabase.app/"
 // Change this to "" if using the release config? private const val firebaseDirName = "erlend-testing"
@@ -167,14 +168,17 @@ class OnlineGroupActivity : AppCompatActivity() {
         return " "
     }
     fun leaveGroup(groupID: Int, groupName: String){
-
+        var groupToBeRemoved : Group? = null
         for(firebaseGroup in listOfFirebaseGroups){
             if(firebaseGroup.ID == groupID){
                 firebaseGroup.membersAndScores.remove(Pair(Firebase.auth.currentUser?.uid!!,0))
                 if(firebaseGroup.membersAndScores.size == 0){
-                    listOfFirebaseGroups.remove(firebaseGroup)
+                    groupToBeRemoved = firebaseGroup
                 }
             }
+        }
+        if (groupToBeRemoved != null){
+            listOfFirebaseGroups.remove(groupToBeRemoved)
         }
         val group = Pair(groupName, groupID)
         listOfOwnGroups.remove(group)
@@ -186,6 +190,15 @@ class OnlineGroupActivity : AppCompatActivity() {
 
 
 
+    }
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        when (item.itemId) {
+            android.R.id.home -> {
+                onBackPressed()
+                return true
+            }
+        }
+        return super.onOptionsItemSelected(item)
     }
 }
 

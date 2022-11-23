@@ -211,6 +211,11 @@ class GroupTasksActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_group_tasks)
+        val actionBar = supportActionBar
+        if (actionBar != null) {
+            actionBar.setDisplayHomeAsUpEnabled(true)
+        }
+
         var previousMonthButton : Button
         previousMonthButton = findViewById(R.id.previousMonthButtonOnline)
         previousMonthButton.setOnClickListener(){
@@ -228,7 +233,7 @@ class GroupTasksActivity : AppCompatActivity() {
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         val inflater = menuInflater
-        inflater.inflate(R.menu.menu, menu)
+        inflater.inflate(R.menu.menu2, menu)
         this.menu = menu
         updateMenuLabels()
         return true
@@ -244,8 +249,15 @@ class GroupTasksActivity : AppCompatActivity() {
                 toggleShowDoneTasks()
                 true
             }
+            android.R.id.home -> {
+                onBackPressed()
+                return true
+            }
             else -> super.onOptionsItemSelected(item)
         }
+
+
+
     }
     fun addScore(isChecked : Boolean){
         if(isChecked){
@@ -374,7 +386,6 @@ class GroupTasksActivity : AppCompatActivity() {
 
 
 
-
     fun isOnline(context: Context): Boolean {
         val connectivityManager =
             context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
@@ -396,4 +407,5 @@ class GroupTasksActivity : AppCompatActivity() {
         }
         return false
     }
+
 }

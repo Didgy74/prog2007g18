@@ -9,6 +9,7 @@ import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -29,8 +30,10 @@ data class Task(
     var done: Boolean = false,
     var progressTask : Boolean = false,
     var progress : Int = 0,
-    var goal : Int = 0,
+    var goal : Int = 10,
     var frequency : Frequency = Frequency.oneTime,
+    @Serializable(with = LocalDateTimeSerializer::class)
+    var lastEdited: LocalDateTime = LocalDateTime.now(),
     var notify: Boolean = false)
     : Parcelable
 {

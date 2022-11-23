@@ -181,8 +181,8 @@ class MainActivity : AppCompatActivity() {
         }
         for(task in newlyRetrievedTaskList){
             if(!toBeDeleted(task, localStoredTaskList, lastRetrievedTaskList, bufferList)) {
-                //TODO: newestTask = getNewestVersion(task, localStoredTaskList)
-                bufferList.add(task)
+                var newestTask = getNewestVersion(localStoredTaskList,task)
+                bufferList.add(newestTask)
             }
         }
 
@@ -191,20 +191,19 @@ class MainActivity : AppCompatActivity() {
         setNewDeadlines(bufferList)
         return bufferList
     }
-    //TODO
-    /*
+
     private fun getNewestVersion(localList: List<Task>, firebaseTask : Task) : Task{
         for (task in localList){
-            //Title and time functions as an unique identifier
-            if(task.title == firebaseTask && task.timeAndDateCreated == firebaseTask.timeAndDateCreated){
-                if(task.lastUpdateTime > firebaseTask.lastUpdateTime){
+            //Title and deadline values as an unique identifier
+            if(task.title == firebaseTask.title && task.deadline == firebaseTask.deadline){
+                if(task.lastEdited > firebaseTask.lastEdited){
                     return task
-                }else{return firebaseTask}
+                }else return firebaseTask
             }
         }
         return firebaseTask
     }
-    */
+
     private fun containsTask(taskList2 : List<Task>, task2 : Task) : Boolean{
         for (task in taskList2) {
             if(task.title ==  task2.title && task.deadline == task2.deadline){

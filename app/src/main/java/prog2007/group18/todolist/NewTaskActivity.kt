@@ -83,7 +83,9 @@ class NewTaskActivity : AppCompatActivity() {
         val goalInput = findViewById<TextInputEditText>(R.id.goalInput)
         var goal : Int
         if(findViewById<RadioButton>(R.id.radioButton6).isChecked){
-            goal = goalInput.text.toString().toInt()
+            if(goalInput.text!!.isNotEmpty()){
+                goal = goalInput.text.toString().toInt()
+            } else goal = 10
         } else {
             goal = 0
         }

@@ -100,10 +100,12 @@ class ListRecyclerAdapter(
             frameLayout.setBackgroundResource(R.drawable.taskfragment_frame)
         }
         // Setup the checkbox
-        val checkbox = view.findViewById<CheckBox>(R.id.taskItemDoneCheckbox)
-        checkbox.isChecked = task.done
-        checkbox.setOnCheckedChangeListener { _, value ->
-            setTaskListElement(displayElement.index, task.copy( done = value))
+        if(viewHolder.itemViewType == 0){
+            val checkbox = view.findViewById<CheckBox>(R.id.taskItemDoneCheckbox)
+            checkbox.isChecked = task.done
+            checkbox.setOnCheckedChangeListener { _, value ->
+                setTaskListElement(displayElement.index, task.copy( done = value, lastEdited = LocalDateTime.now()))
+            }
         }
         if(viewHolder.itemViewType == 1){
             val progressText = view.findViewById<TextView>(R.id.progressText)
@@ -125,7 +127,7 @@ class ListRecyclerAdapter(
                 }
                 setTaskListElement(
                     displayElement.index,
-                    task.copy(progress = task.progress, done = task.done))
+                    task.copy(progress = task.progress, done = task.done, lastEdited = LocalDateTime.now()))
             }
         }
     }

@@ -4,6 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:windowSoftInputMode="adjustPan"
     tools:context=".MainActivity">
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -22,7 +23,7 @@
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/mainList"
         android:layout_width="411dp"
-        android:layout_height="558dp"
+        android:layout_height="wrap_content"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -42,10 +43,10 @@
         android:id="@+id/onlineGroupButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
-        android:text="Button"
-        app:layout_constraintBottom_toTopOf="@+id/fabAdd"
-        tools:layout_editor_absoluteX="317dp" />
+        android:layout_marginBottom="16dp"
+        android:text="Groups"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/fabAdd" />
 
     <FrameLayout
         android:layout_width="409dp"
