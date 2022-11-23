@@ -247,8 +247,8 @@ class GroupTasksActivity : AppCompatActivity() {
             else -> super.onOptionsItemSelected(item)
         }
     }
-    fun addScore(value : Boolean){
-        if(value){
+    fun addScore(isChecked : Boolean){
+        if(isChecked){
             val groupID = intent.getStringExtra("groupID")
             groupID!!.toInt()
             for(firebaseGroup in listOfFirebaseGroups){
@@ -263,12 +263,12 @@ class GroupTasksActivity : AppCompatActivity() {
     }
     fun addScore(leaderboard : MutableList<Pair<String, Int>>) : MutableList<Pair<String, Int>>{
         var newLeaderboard : MutableList<Pair<String, Int>> = mutableListOf()
-        for(score in leaderboard){
-            if(score.first == Firebase.auth.currentUser?.uid!!){
-                var newScore : Int = score.second+100
+        for((uid,score) in leaderboard){
+            if(uid == Firebase.auth.currentUser?.uid!!){
+                var newScore : Int = score+100
                 var modifiedScore = Pair(Firebase.auth.currentUser?.uid!!,newScore)
                 newLeaderboard.add(modifiedScore)
-            }else newLeaderboard.add(score)
+            }else newLeaderboard.add(Pair(uid,score))
 
         }
         return newLeaderboard
@@ -305,8 +305,8 @@ class GroupTasksActivity : AppCompatActivity() {
     private fun setUpLeaderboard() {
         var leaderboardTextView = findViewById<TextView>(R.id.leaderBoardScore)
         var scoreText = ""
-        for(score in getGroupScores()){
-             scoreText += score.first + " : " + score.second
+        for((uid, score) in getGroupScores()){
+            scoreText += uid + " : " + score
         }
         leaderboardTextView.text = scoreText
     }

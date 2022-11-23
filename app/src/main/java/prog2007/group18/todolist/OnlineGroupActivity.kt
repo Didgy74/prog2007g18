@@ -4,6 +4,7 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
+import android.widget.TextView
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -52,7 +53,7 @@ class OnlineGroupActivity : AppCompatActivity() {
         }
 
         //firebaseDir.addValueEventListener(firebaseDbValueListener)
-        recyclerAdapter = GroupRecyclerAdapter(listOfOwnGroups, this)
+        recyclerAdapter = GroupRecyclerAdapter(this, listOfOwnGroups, this)
         recyclerView = findViewById(R.id.groupRecyclerView)
         // Setup the RecyclerView
         recyclerView.layoutManager = LinearLayoutManager(this)
@@ -70,11 +71,13 @@ class OnlineGroupActivity : AppCompatActivity() {
         val groupIDInput: EditText = findViewById(R.id.groupIDInput)
         val joinGroupButton: Button = findViewById(R.id.button2)
         joinGroupButton.setOnClickListener(){
-            joinGroup(groupIDInput.text.toString().toInt())
+            if(validIdInput(groupIDInput.text.toString())) {
+                joinGroup(groupIDInput.text.toString().toInt())
+            } else findViewById<TextView>(R.id.errorMessage).text = "Please write a valid ID"
         }
     }
     private fun updateAdapter(){
-        recyclerAdapter = GroupRecyclerAdapter(listOfOwnGroups, this)
+        recyclerAdapter = GroupRecyclerAdapter(this, listOfOwnGroups, this)
         recyclerView.adapter = recyclerAdapter
     }
     private val firebaseDbValueListenerOwnGroups = object : ValueEventListener {
@@ -110,7 +113,7 @@ class OnlineGroupActivity : AppCompatActivity() {
         val group = Pair(groupName, groupID)
         listOfOwnGroups.add(group)
         firebaseDir.setValue(Json.encodeToString(listOfOwnGroups))
-        recyclerAdapter = GroupRecyclerAdapter(listOfOwnGroups, this)
+        recyclerAdapter = GroupRecyclerAdapter(this, listOfOwnGroups, this)
         recyclerView.adapter = recyclerAdapter
         //Each firebaseGroup has a taskList
         val placeholderList = mutableListOf<Task>()
@@ -121,9 +124,6 @@ class OnlineGroupActivity : AppCompatActivity() {
         listOfFirebaseGroups.add(Group(groupID,groupName,memberAndScoreList))
         (firebaseDb.reference.child(groupID.toString())).setValue(Json.encodeToString(placeholderList))
         firebaseDb.reference.child("Groups").setValue(Json.encodeToString(listOfFirebaseGroups))
-        //firebaseGroup.setValue("Test")
-        //Add to list of all groups.
-        //
 
     }
     private fun joinGroup(groupID: Int){
@@ -135,25 +135,57 @@ class OnlineGroupActivity : AppCompatActivity() {
         val group = Pair(groupName, groupID)
         listOfOwnGroups.add(group)
         firebaseDir.setValue(Json.encodeToString(listOfOwnGroups))
-        recyclerAdapter = GroupRecyclerAdapter(listOfOwnGroups, this)
+        recyclerAdapter = GroupRecyclerAdapter(this, listOfOwnGroups, this)
         recyclerView.adapter = recyclerAdapter
 
 
         firebaseDb.reference.child("Groups").setValue(Json.encodeToString(listOfFirebaseGroups))
     }
+    private fun validIdInput(input : String?): Boolean{
+            if (input.isNullOrEmpty()) {
+                return false
+            }
+
+            return input.all { Character.isDigit(it) }
+
+    }
     private fun validJoin(groupID: Int) : String{
-            for(joinedGroup in listOfOwnGroups){
-                if(joinedGroup.second == groupID){
-                    return " "
-                }
+        var errorTextView = findViewById<TextView>(R.id.errorMessage)
+        for(joinedGroup in listOfOwnGroups){
+            if(joinedGroup.second == groupID){
+                errorTextView.text = "You are already in this group"
+                return " "
             }
-            for(firebaseGroup in listOfFirebaseGroups){
-                if(firebaseGroup.ID == groupID){
-                    firebaseGroup.membersAndScores.add(Pair(Firebase.auth.currentUser?.uid!!,0))
-                    return firebaseGroup.groupName
-                }
+        }
+        for(firebaseGroup in listOfFirebaseGroups){
+            if(firebaseGroup.ID == groupID){
+                firebaseGroup.membersAndScores.add(Pair(Firebase.auth.currentUser?.uid!!,0))
+                return firebaseGroup.groupName
             }
+        }
+        errorTextView.text = "This group does not exist"
         return " "
+    }
+    fun leaveGroup(groupID: Int, groupName: String){
+
+        for(firebaseGroup in listOfFirebaseGroups){
+            if(firebaseGroup.ID == groupID){
+                firebaseGroup.membersAndScores.remove(Pair(Firebase.auth.currentUser?.uid!!,0))
+                if(firebaseGroup.membersAndScores.size == 0){
+                    listOfFirebaseGroups.remove(firebaseGroup)
+                }
+            }
+        }
+        val group = Pair(groupName, groupID)
+        listOfOwnGroups.remove(group)
+        firebaseDir.setValue(Json.encodeToString(listOfOwnGroups))
+        firebaseDb.reference.child(groupID.toString()).removeValue()
+        firebaseDb.reference.child("Groups").setValue(Json.encodeToString(listOfFirebaseGroups))
+        recyclerAdapter = GroupRecyclerAdapter(this, listOfOwnGroups, this)
+        recyclerView.adapter = recyclerAdapter
+
+
+
     }
 }
 
