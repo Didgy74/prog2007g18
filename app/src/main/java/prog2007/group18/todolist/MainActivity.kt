@@ -79,6 +79,7 @@ class MainActivity : AppCompatActivity() {
             if (dataListenerAdded == false) {
                 setupFirebaseDb()
                 //dataListenerAdded = true
+                findViewById<Button>(R.id.onlineGroupButton).setVisibility(View.INVISIBLE)
                 firebaseDir.addValueEventListener(firebaseDbValueListener)
             }
             val task = firebaseDir.setValue(Utils.serializeTaskList(taskList))
@@ -337,6 +338,7 @@ class MainActivity : AppCompatActivity() {
         if (todoListApp.isLoggedIn && isOnline(this) && !dataListenerAdded){
             setupFirebaseDb()
             //dataListenerAdded = true
+            findViewById<Button>(R.id.onlineGroupButton).setVisibility(View.VISIBLE);
             firebaseDir.addValueEventListener(firebaseDbValueListener)
         }
 
@@ -394,6 +396,7 @@ class MainActivity : AppCompatActivity() {
     private fun signOutProcedure() {
         firebaseDir.removeEventListener(firebaseDbValueListener)
         dataListenerAdded = false
+        findViewById<Button>(R.id.onlineGroupButton).setVisibility(View.INVISIBLE)
         // Download the online data
         firebaseDir.get().addOnSuccessListener { snapshot ->
             this.runOnUiThread {
@@ -413,7 +416,6 @@ class MainActivity : AppCompatActivity() {
         // We shouldn't be starting the sign-in activity
         // if we are already signed in.
         assert(!isLoggedIn)
-
         // Choose authentication providers
         val providers = arrayListOf(AuthUI.IdpConfig.GoogleBuilder().build())
 
@@ -436,6 +438,7 @@ class MainActivity : AppCompatActivity() {
             if(dataListenerAdded == false){
                 setupFirebaseDb()
                 //dataListenerAdded = true
+                findViewById<Button>(R.id.onlineGroupButton).setVisibility(View.VISIBLE);
                 firebaseDir.addValueEventListener(firebaseDbValueListener)
             }
             updateMenuLabels()
