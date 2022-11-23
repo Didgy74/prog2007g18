@@ -11,6 +11,14 @@ plugins {
 }
 
 android {
+    signingConfigs {
+        debug {
+            storeFile file('D:\\School\\Mobile\\main\\app\\signing_config.jks')
+            storePassword 'group18'
+            keyAlias 'key0'
+            keyPassword 'group18'
+        }
+    }
     namespace 'prog2007.group18.todolist'
     compileSdk 32
 
@@ -22,12 +30,15 @@ android {
         versionName "1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        signingConfig signingConfigs.debug
     }
 
     buildTypes {
         release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.debug
+        }
+        debug {
+            signingConfig signingConfigs.debug
         }
     }
     compileOptions {

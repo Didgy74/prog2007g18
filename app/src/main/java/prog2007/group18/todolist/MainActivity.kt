@@ -120,7 +120,7 @@ class MainActivity : AppCompatActivity() {
 
     private val firebaseDbValueListener = object : ValueEventListener {
         override fun onDataChange(snapshot: DataSnapshot) {
-            if(snapshot != null){
+            if(snapshot.value != null){
                 dataListenerAdded = true
                 var loadedList = Utils.deserializeTaskList(snapshot.value as String)
                 //lastLoadedList = loadedList.toMutableList()
