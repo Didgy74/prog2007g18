@@ -77,10 +77,7 @@ class MainActivity : AppCompatActivity() {
         if (checkIfLoggedIn()  && pushToOnline && isOnline(this)) {
             // Only run if we are logged in?
             if (dataListenerAdded == false) {
-                setupFirebaseDb()
-                //dataListenerAdded = true
-                findViewById<Button>(R.id.onlineGroupButton).setVisibility(View.INVISIBLE)
-                firebaseDir.addValueEventListener(firebaseDbValueListener)
+                loginSetup()
             }
             val task = firebaseDir.setValue(Utils.serializeTaskList(taskList))
             if (task.isSuccessful) {
@@ -91,7 +88,11 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
-
+    private fun loginSetup(){
+        setupFirebaseDb()
+        findViewById<Button>(R.id.onlineGroupButton).setVisibility(View.INVISIBLE)
+        firebaseDir.addValueEventListener(firebaseDbValueListener)
+    }
     private fun checkIfLoggedIn() : Boolean{
         val user = Firebase.auth.currentUser
         return user != null
@@ -336,10 +337,7 @@ class MainActivity : AppCompatActivity() {
             preferences.showDoneTasks)
         recyclerView = findViewById(R.id.mainList)
         if (todoListApp.isLoggedIn && isOnline(this) && !dataListenerAdded){
-            setupFirebaseDb()
-            //dataListenerAdded = true
-            findViewById<Button>(R.id.onlineGroupButton).setVisibility(View.VISIBLE);
-            firebaseDir.addValueEventListener(firebaseDbValueListener)
+            loginSetup()
         }
 
         // Setup the RecyclerView
@@ -436,10 +434,7 @@ class MainActivity : AppCompatActivity() {
             // If Firebase already has data, then download it.
             // Otherwise upload ours.
             if(dataListenerAdded == false){
-                setupFirebaseDb()
-                //dataListenerAdded = true
-                findViewById<Button>(R.id.onlineGroupButton).setVisibility(View.VISIBLE);
-                firebaseDir.addValueEventListener(firebaseDbValueListener)
+                loginSetup()
             }
             updateMenuLabels()
         } else {
