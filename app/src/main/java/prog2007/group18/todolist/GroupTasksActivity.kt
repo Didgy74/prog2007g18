@@ -259,6 +259,9 @@ class GroupTasksActivity : AppCompatActivity() {
 
 
     }
+    private fun isOnline() : Boolean{
+        return (isOnline(this) && todoListApp.isLoggedIn)
+    }
     //This function is only called in the recyclerView when a task is marked as done
     fun addScore(isChecked : Boolean){
         //First checking if it has been checked and not unchecked
@@ -273,9 +276,13 @@ class GroupTasksActivity : AppCompatActivity() {
             }
         }
         setUpLeaderboard()
-        //Updating the list with the new score
-        firebaseGroups.setValue(Json.encodeToString(listOfFirebaseGroups))
+
+        if(isOnline()) {
+            //Updating the list with the new score
+            firebaseGroups.setValue(Json.encodeToString(listOfFirebaseGroups))
+        }
     }
+
     //Adds score to the user who activates the first addScore function. Takes a list of scores and returns the updated one.
     fun addScore(leaderboard : MutableList<Pair<String, Int>>) : MutableList<Pair<String, Int>>{
         var newLeaderboard : MutableList<Pair<String, Int>> = mutableListOf()
@@ -369,6 +376,7 @@ class GroupTasksActivity : AppCompatActivity() {
                 return false
             }
         })
+        calendarListSetUp(taskList)
         setUpLeaderboard()
     }
 

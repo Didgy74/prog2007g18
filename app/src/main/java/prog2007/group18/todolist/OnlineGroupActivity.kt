@@ -1,6 +1,10 @@
 package prog2007.group18.todolist
 
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.os.Bundle
+import android.util.Log
 import android.view.MenuItem
 import android.widget.Button
 import android.widget.EditText
@@ -40,7 +44,9 @@ class OnlineGroupActivity : AppCompatActivity() {
         firebaseGroups = firebaseDb.reference.child("Groups")
         firebaseGroups.addValueEventListener(firebaseDbValueListenerAllGroups)
     }
-
+    private fun isOnline() : Boolean{
+        return (isOnline(this) && Firebase.auth.currentUser != null)
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_online_group)
@@ -66,14 +72,19 @@ class OnlineGroupActivity : AppCompatActivity() {
         val groupNameInput: EditText = findViewById(R.id.groupNameInput)
         val createNewGroupButton: Button = findViewById(R.id.button3)
         createNewGroupButton.setOnClickListener {
-            createNewGroup(groupNameInput.text.toString())
+            if(isOnline()) {
+                createNewGroup(groupNameInput.text.toString())
+            }
         }
         val groupIDInput: EditText = findViewById(R.id.groupIDInput)
         val joinGroupButton: Button = findViewById(R.id.button2)
         joinGroupButton.setOnClickListener(){
-            if(validIdInput(groupIDInput.text.toString())) {
-                joinGroup(groupIDInput.text.toString().toInt())
-            } else findViewById<TextView>(R.id.errorMessage).text = "Please write a valid ID"
+            if(isOnline()){
+
+                if (validIdInput(groupIDInput.text.toString())) {
+                    joinGroup(groupIDInput.text.toString().toInt())
+                } else findViewById<TextView>(R.id.errorMessage).text = "Please write a valid ID"
+            }
         }
     }
     private fun updateAdapter(){
@@ -119,11 +130,10 @@ class OnlineGroupActivity : AppCompatActivity() {
         recyclerView.adapter = recyclerAdapter
         //Each firebaseGroup has a taskList
         val placeholderList = mutableListOf<Task>()
-        //Making the directory for the group
-        //Firebase.auth.currentUser?.uid!!
         var memberAndScoreList = mutableListOf<Pair<String,Int>>()
         memberAndScoreList.add(Pair(Firebase.auth.currentUser?.uid!!,0))
         listOfFirebaseGroups.add(Group(groupID,groupName,memberAndScoreList))
+        //Making the directory for the group
         (firebaseDb.reference.child(groupID.toString())).setValue(Json.encodeToString(placeholderList))
         firebaseDb.reference.child("Groups").setValue(Json.encodeToString(listOfFirebaseGroups))
 
@@ -174,6 +184,7 @@ class OnlineGroupActivity : AppCompatActivity() {
         return " "
     }
     fun leaveGroup(groupID: Int, groupName: String){
+        if(!isOnline()) return
         var groupToBeRemoved : Group? = null
         for(firebaseGroup in listOfFirebaseGroups){
             if(firebaseGroup.ID == groupID){
@@ -205,6 +216,27 @@ class OnlineGroupActivity : AppCompatActivity() {
             }
         }
         return super.onOptionsItemSelected(item)
+    }
+    fun isOnline(context: Context): Boolean {
+        val connectivityManager =
+            context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        if (connectivityManager != null) {
+            val capabilities =
+                connectivityManager.getNetworkCapabilities(connectivityManager.activeNetwork)
+            if (capabilities != null) {
+                if (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)) {
+                    Log.i("Internet", "NetworkCapabilities.TRANSPORT_CELLULAR")
+                    return true
+                } else if (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
+                    Log.i("Internet", "NetworkCapabilities.TRANSPORT_WIFI")
+                    return true
+                } else if (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)) {
+                    Log.i("Internet", "NetworkCapabilities.TRANSPORT_ETHERNET")
+                    return true
+                }
+            }
+        }
+        return false
     }
 }
 

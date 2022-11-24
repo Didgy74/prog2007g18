@@ -80,9 +80,6 @@ class MainActivity : AppCompatActivity() {
                 loginSetup()
             }
             val task = firebaseDir.setValue(Utils.serializeTaskList(taskList))
-            if (task.isSuccessful) {
-                Utils.writeLastFirebaseListToFile(this, taskList)
-            }
             if (!task.isSuccessful) {
                 Log.e("TodoList", "Unable to push updates online.")
             }
@@ -117,11 +114,18 @@ class MainActivity : AppCompatActivity() {
     { res ->
         onSignInResult(res)
     }
+    private fun writeLastFirebaseListToFile(taskList : List<Task>){
+        //Utils.writeLastFirebaseListToFile()
+    }
 
+    private fun isOnline() : Boolean{
+        return (isOnline(this) && todoListApp.isLoggedIn)
+    }
     private val firebaseDbValueListener = object : ValueEventListener {
         override fun onDataChange(snapshot: DataSnapshot) {
-            if(snapshot.value != null){
+            if(snapshot.value != null && isOnline()){
                 dataListenerAdded = true
+                //writeLastFirebaseListToFile()
                 var loadedList = Utils.deserializeTaskList(snapshot.value as String)
                 //lastLoadedList = loadedList.toMutableList()
                 val syncedList = sync(loadedList)
