@@ -135,7 +135,7 @@ class MainActivity : AppCompatActivity() {
         }
         override fun onCancelled(error: DatabaseError) {}
     }
-
+    //This code finds the tasks with deadlines that have been passed and updates them if they're marked as daily or weekly tasks
     private fun setNewDeadlines(taskList : List<Task>){
         for(task in taskList){
             if(LocalDateTime.now().isAfter(task.deadline)){
@@ -159,30 +159,34 @@ class MainActivity : AppCompatActivity() {
 
     }
 
-    //For tasks in both lists, use timestamp and add the newest one to the final task list
+
 
     //Cloud tasks in last sync missing in new one should be deleted from the final list.
     //Cloud tasks missing from last sync that are in the new one are new and should be downloaded to the final list
 
     //Task missing from both syncs should be added to the final list
     //Tasks in both syncs missing from local should be deleted from the final list
+    //For tasks in both lists, use timestamp and add the newest one to the final task list
+
+    //Locally created tasks shouldn't just overwrite the firebase in case the user has multiple devices, so we run this sync function every time the task list is changed
     private fun sync(newlyRetrievedTaskList : List<Task>) : List<Task>{
 
         val localStoredTaskList = Utils.loadTaskListFromFile(this)
         val lastRetrievedTaskList = Utils.loadLastFirebaseListFromFile(this)
 
-        //Create new FinalList that starts with all tasks from local storage
-        //
+        //Create new FinalList that starts with all tasks from local storage that haven't been uploaded
+
         var bufferList = mutableListOf<Task>()
 
         for (task in localStoredTaskList){
-            //Those tasks that have never been uploaded to cloud from main
             if(!containsTask(lastRetrievedTaskList, task)){
                 bufferList.add(task)
             }
         }
+        //Add the cloud tasks that shouldn't be deleted
         for(task in newlyRetrievedTaskList){
             if(!toBeDeleted(task, localStoredTaskList, lastRetrievedTaskList, bufferList)) {
+                //If the task has been changed locally since last sync, the firebase one shouldn't overwrite it
                 var newestTask = getNewestVersion(localStoredTaskList,task)
                 bufferList.add(newestTask)
             }
@@ -223,24 +227,20 @@ class MainActivity : AppCompatActivity() {
         //taskFromNewSync must not be deleted if not in old sync
         return false
     }
-    //Add variable for previous/next month
+    //Variable that keeps track of which month the user will see. +2 means two months from now, -1 means last month.
     var monthInCalendar : Long = 0
     private fun calendarListSetUp(){
-        //var newCalendar : CalendarFragment =
         // getting the recyclerview by its id
         val recyclerview = findViewById<RecyclerView>(R.id.calendarView)
         val localStoredTaskList = Utils.loadTaskListFromFile(this)
-        // this creates a vertical layout Manager
+        // this creates a horizontal layout Manager
         recyclerview.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
-        recyclerView.addItemDecoration(
-            DividerItemDecoration(
-                recyclerView.context, DividerItemDecoration.HORIZONTAL
-            )
-        )
+
         //Plussing with monthInCalendar so that we can get the previous and next months if those buttons are pressed
         var currentMonth = LocalDateTime.now().month
         var eachDate = LocalDateTime.now() //.plusMonths(monthInCalendar)
         var longZero : Long = 0
+        //Getting other months if user has clicked on previous or next months
         if(monthInCalendar != longZero){
             currentMonth = LocalDateTime.now().month.plus(monthInCalendar)
             eachDate = LocalDateTime.now().plusMonths(monthInCalendar)
@@ -248,8 +248,10 @@ class MainActivity : AppCompatActivity() {
         }
 
         var  listOfRemainingDays : MutableList<CalendarDay> = mutableListOf()
+        //For each remaining day in the month
         while(currentMonth ==  eachDate.month){
             var tasksPerDay = 0
+            //Find number of tasks for current day
             for (task in localStoredTaskList.filter { it -> it.deadline.month == eachDate.month && it.deadline.dayOfMonth == eachDate.dayOfMonth }) {
                 tasksPerDay++
             }
@@ -258,8 +260,6 @@ class MainActivity : AppCompatActivity() {
         }
 
 
-
-        // This will pass the ArrayList to our Adapter
         val adapter = CalendarAdapter(listOfRemainingDays, this)
 
         // Setting the Adapter with the recyclerview
@@ -270,23 +270,20 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        var onlineGroupButton : Button
-        onlineGroupButton= findViewById(R.id.onlineGroupButton)
+        var onlineGroupButton : Button = findViewById(R.id.onlineGroupButton)
         onlineGroupButton.setOnClickListener(){
-            if(checkIfLoggedIn()){
+            if(checkIfLoggedIn() && isOnline(this)){
                 val intent = Intent(this, OnlineGroupActivity::class.java)
                 startActivity(intent)
             }
         }
 
-        var previousMonthButton : Button
-        previousMonthButton = findViewById(R.id.previousMonthButton)
+        var previousMonthButton : Button = findViewById(R.id.previousMonthButton)
         previousMonthButton.setOnClickListener(){
             monthInCalendar--
             calendarListSetUp()
         }
-        var nextMonthButton : Button
-        nextMonthButton = findViewById(R.id.nextMonthButton)
+        var nextMonthButton : Button = findViewById(R.id.nextMonthButton)
         nextMonthButton.setOnClickListener(){
             monthInCalendar++
             calendarListSetUp()
@@ -450,6 +447,8 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
+    //Got this code from stackOverlow. Figured it would be okay to copy and paste since we didn't learn it in class.
+    //https://stackoverflow.com/questions/51141970/check-internet-connectivity-android-in-kotlin
     fun isOnline(context: Context): Boolean {
         val connectivityManager =
             context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager

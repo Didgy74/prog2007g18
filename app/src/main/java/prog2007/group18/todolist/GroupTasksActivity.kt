@@ -85,12 +85,12 @@ class GroupTasksActivity : AppCompatActivity() {
             println("You are logged in on user " + Firebase.auth.currentUser?.email)
         }
         if (checkIfLoggedIn()  && pushToOnline && isOnline(this)) {
-            // Only run if we are logged in?
+            // Only run if we are logged in
             if(dataListenerAdded == false){
                 setupFirebaseDb()
-                dataListenerAdded = true
                 firebaseGroups.addValueEventListener(firebaseDbValueListenerAllGroups)
                 firebaseDir.addValueEventListener(firebaseDbValueListener)
+                dataListenerAdded = true
             }
             val task = firebaseDir.setValue(Utils.serializeTaskList(taskList))
             if (!task.isSuccessful) {
@@ -259,20 +259,24 @@ class GroupTasksActivity : AppCompatActivity() {
 
 
     }
+    //This function is only called in the recyclerView when a task is marked as done
     fun addScore(isChecked : Boolean){
+        //First checking if it has been checked and not unchecked
         if(isChecked){
             val groupID = intent.getStringExtra("groupID")
-            groupID!!.toInt()
             for(firebaseGroup in listOfFirebaseGroups){
+                //Finding the firebase group this activity is for
                 if(firebaseGroup.ID == groupID!!.toInt()){
+                    //Adding score to the correct group
                     firebaseGroup.membersAndScores = addScore(firebaseGroup.membersAndScores)
                 }
             }
         }
         setUpLeaderboard()
-        //Do this to string
+        //Updating the list with the new score
         firebaseGroups.setValue(Json.encodeToString(listOfFirebaseGroups))
     }
+    //Adds score to the user who activates the first addScore function. Takes a list of scores and returns the updated one.
     fun addScore(leaderboard : MutableList<Pair<String, Int>>) : MutableList<Pair<String, Int>>{
         var newLeaderboard : MutableList<Pair<String, Int>> = mutableListOf()
         for((uid,score) in leaderboard){
@@ -285,6 +289,7 @@ class GroupTasksActivity : AppCompatActivity() {
         }
         return newLeaderboard
     }
+    //This code finds the tasks with deadlines that have been passed and updates them if they're marked as daily or weekly tasks
     private fun setNewDeadlines(taskList : List<Task>){
         for(task in taskList){
             if(LocalDateTime.now().isAfter(task.deadline)){
@@ -308,12 +313,12 @@ class GroupTasksActivity : AppCompatActivity() {
 
     }
     private fun setupFirebaseDb() {
-        //FirebaseApp.initializeApp(this)
         firebaseDb = Firebase.database(TodoListApp.firebaseDbRepoUrl)
         val groupID = intent.getStringExtra("groupID")
         firebaseDir = todoListApp.firebaseTopLevelDir.child(groupID!!)
         firebaseGroups = firebaseDb.reference.child("Groups")
     }
+    //Creating a leadboard with data from the firebase list containing all groups
     private fun setUpLeaderboard() {
         var leaderboardTextView = findViewById<TextView>(R.id.leaderBoardScore)
         var scoreText = ""
@@ -330,7 +335,7 @@ class GroupTasksActivity : AppCompatActivity() {
                 return firebaseGroup.membersAndScores
             }
         }
-        //Will never run if not an error
+        //Just needed to return something, even though the groupID will always exist in the firebase list
         var emptyList : List<Pair<String,Int>> = mutableListOf()
         return emptyList
     }
@@ -341,9 +346,9 @@ class GroupTasksActivity : AppCompatActivity() {
         recyclerAdapter = GroupListRecyclerAdapter(this, preferences.showDoneTasks)
         recyclerView = findViewById(R.id.mainList2)
         if (isLoggedIn && isOnline(this) && !dataListenerAdded){
-            dataListenerAdded = true
             firebaseDir.addValueEventListener(firebaseDbValueListener)
             firebaseGroups.addValueEventListener(firebaseDbValueListenerAllGroups)
+            dataListenerAdded = true
         }
 
 
@@ -385,7 +390,8 @@ class GroupTasksActivity : AppCompatActivity() {
 
 
 
-
+    //Got this code from stackOverlow. Figured it would be okay to copy and paste since we didn't learn it in class.
+    //https://stackoverflow.com/questions/51141970/check-internet-connectivity-android-in-kotlin
     fun isOnline(context: Context): Boolean {
         val connectivityManager =
             context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager

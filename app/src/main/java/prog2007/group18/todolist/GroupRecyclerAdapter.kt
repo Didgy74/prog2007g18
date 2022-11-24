@@ -24,7 +24,7 @@ class GroupRecyclerAdapter(
             this.groupName = groupName
             groupInfo.text = "Group name: $groupName Group ID: $groupID"
 
-
+            //Clicking on a group will open it's tasks
             groupInfo.setOnClickListener {
                 val intent = Intent(context, GroupTasksActivity::class.java)
                 intent.putExtra("groupID",groupID.toString())

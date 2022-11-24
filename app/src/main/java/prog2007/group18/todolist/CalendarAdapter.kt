@@ -12,24 +12,13 @@ class CalendarAdapter (private val Days: MutableList<CalendarDay>, private val c
 
     class DayViewHolder(v: View) : RecyclerView.ViewHolder(v){
         var view: View = v
-        var food: String = ""
-        //Using intents as described in https://stackoverflow.com/questions/45157567/how-to-pass-the-values-from-activity-to-another-activity to pass data from the second activity to the third
+        //Each day will show number of tasks that day
         fun bindDay(day: LocalDateTime, numberOfTasks : Int, context: Context){
             val numberOfTasksTextView = view.findViewById<TextView>(R.id.numberOfTasks)
             numberOfTasksTextView.text = numberOfTasks.toString()
             val dayTextView= view.findViewById<TextView>(R.id.dayTextView)
             dayTextView.text = day.dayOfMonth.toString()
-           /*
-            view.textView.setOnClickListener {
-                println(food)
-                val intent2 = Intent(context,ThirdActivity::class.java)
-                intent2.putExtra("picture",picture.toString())
-                intent2.putExtra("food",food)
-                intent2.putExtra("description",description)
 
-                context.startActivity(intent2)
-            }
-            */
         }
     }
 

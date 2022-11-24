@@ -132,6 +132,7 @@ class ListRecyclerAdapter(
         }
     }
 }
+//Mostly the same code as the ListRecylerAdapter, but for the tasks of groups. The key differences are the scores for groups and the need to store last edit for own potentially offline created tasks
 class GroupListRecyclerAdapter(
     private val groupTasksActivity : GroupTasksActivity,
     showDoneTasks: Boolean) :
