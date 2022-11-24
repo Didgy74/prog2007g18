@@ -90,7 +90,7 @@ class MainActivity : AppCompatActivity() {
     }
     private fun loginSetup(){
         setupFirebaseDb()
-        findViewById<Button>(R.id.onlineGroupButton).setVisibility(View.INVISIBLE)
+        findViewById<Button>(R.id.onlineGroupButton).setVisibility(View.VISIBLE)
         firebaseDir.addValueEventListener(firebaseDbValueListener)
     }
     private fun checkIfLoggedIn() : Boolean{
@@ -260,6 +260,7 @@ class MainActivity : AppCompatActivity() {
         }
 
 
+
         val adapter = CalendarAdapter(listOfRemainingDays, this)
 
         // Setting the Adapter with the recyclerview
@@ -272,7 +273,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         var onlineGroupButton : Button = findViewById(R.id.onlineGroupButton)
         onlineGroupButton.setOnClickListener(){
-            if(checkIfLoggedIn() && isOnline(this)){
+            if(checkIfLoggedIn()){
                 val intent = Intent(this, OnlineGroupActivity::class.java)
                 startActivity(intent)
             }
