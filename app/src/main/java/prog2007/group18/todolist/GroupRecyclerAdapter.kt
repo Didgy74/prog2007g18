@@ -45,7 +45,6 @@ class GroupRecyclerAdapter(
     override fun onBindViewHolder(holder: GroupViewHolder, position: Int) {
         val group = groups[position]
         holder.bindGroup(group.first, group.second, context,onlineGroupActivity)
-        println("Test: $position")
     }
 
     override fun getItemCount() = groups.count()

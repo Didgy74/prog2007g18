@@ -277,7 +277,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         var onlineGroupButton : Button = findViewById(R.id.onlineGroupButton)
         onlineGroupButton.setOnClickListener(){
-            if(checkIfLoggedIn()){
+            if(isOnline()){
                 val intent = Intent(this, OnlineGroupActivity::class.java)
                 startActivity(intent)
             }

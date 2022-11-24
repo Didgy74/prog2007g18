@@ -28,6 +28,7 @@ private const val firebaseDbRepo = "https://todolist-a4182-default-rtdb.europe-w
 
 class OnlineGroupActivity : AppCompatActivity() {
     private lateinit var firebaseDb: FirebaseDatabase
+    private lateinit var firebaseTopLevel: DatabaseReference
     private lateinit var firebaseDir: DatabaseReference
     private lateinit var firebaseGroups: DatabaseReference
     private lateinit var recyclerAdapter: GroupRecyclerAdapter
@@ -37,7 +38,7 @@ class OnlineGroupActivity : AppCompatActivity() {
     private var listOfFirebaseGroups = mutableListOf<Group>()
     private fun setupFirebaseDb() {
         firebaseDb = Firebase.database(firebaseDbRepo)
-
+        firebaseTopLevel = firebaseDb.reference.child("main-testing")
         firebaseDir = firebaseDb.reference.child(Firebase.auth.currentUser?.uid!! + "Groups")
         firebaseDir.addValueEventListener(firebaseDbValueListenerOwnGroups)
 
@@ -134,7 +135,7 @@ class OnlineGroupActivity : AppCompatActivity() {
         memberAndScoreList.add(Pair(Firebase.auth.currentUser?.uid!!,0))
         listOfFirebaseGroups.add(Group(groupID,groupName,memberAndScoreList))
         //Making the directory for the group
-        (firebaseDb.reference.child(groupID.toString())).setValue(Json.encodeToString(placeholderList))
+        (firebaseTopLevel.child(groupID.toString())).setValue(Json.encodeToString(placeholderList))
         firebaseDb.reference.child("Groups").setValue(Json.encodeToString(listOfFirebaseGroups))
 
     }
@@ -196,11 +197,11 @@ class OnlineGroupActivity : AppCompatActivity() {
         }
         if (groupToBeRemoved != null){
             listOfFirebaseGroups.remove(groupToBeRemoved)
+            firebaseTopLevel.child(groupID.toString()).removeValue()
         }
         val group = Pair(groupName, groupID)
         listOfOwnGroups.remove(group)
         firebaseDir.setValue(Json.encodeToString(listOfOwnGroups))
-        firebaseDb.reference.child(groupID.toString()).removeValue()
         firebaseDb.reference.child("Groups").setValue(Json.encodeToString(listOfFirebaseGroups))
         recyclerAdapter = GroupRecyclerAdapter(this, listOfOwnGroups, this)
         recyclerView.adapter = recyclerAdapter

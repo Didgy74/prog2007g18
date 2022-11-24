@@ -159,6 +159,7 @@ class GroupTasksActivity : AppCompatActivity() {
             if(snapshot.exists()){
                 val allGroups = Json.decodeFromString(snapshot.value as String) as List<Group>
                 listOfFirebaseGroups = allGroups.toMutableList()
+                setUpLeaderboard()
             }
 
         }
@@ -275,12 +276,12 @@ class GroupTasksActivity : AppCompatActivity() {
                 }
             }
         }
-        setUpLeaderboard()
 
         if(isOnline()) {
             //Updating the list with the new score
             firebaseGroups.setValue(Json.encodeToString(listOfFirebaseGroups))
         }
+        setUpLeaderboard()
     }
 
     //Adds score to the user who activates the first addScore function. Takes a list of scores and returns the updated one.
@@ -325,18 +326,17 @@ class GroupTasksActivity : AppCompatActivity() {
         firebaseDir = todoListApp.firebaseTopLevelDir.child(groupID!!)
         firebaseGroups = firebaseDb.reference.child("Groups")
     }
-    //Creating a leadboard with data from the firebase list containing all groups
+    //Creating a leaderboard with data from the firebase list containing all groups
     private fun setUpLeaderboard() {
         var leaderboardTextView = findViewById<TextView>(R.id.leaderBoardScore)
         var scoreText = ""
         for((uid, score) in getGroupScores()){
-            scoreText += uid + " : " + score
+            scoreText += uid + " : " + score + "\n"
         }
         leaderboardTextView.text = scoreText
     }
     private fun getGroupScores() : List<Pair<String,Int>>{
         val groupID = intent.getStringExtra("groupID")
-        groupID!!.toInt()
         for(firebaseGroup in listOfFirebaseGroups){
             if(firebaseGroup.ID == groupID!!.toInt()){
                 return firebaseGroup.membersAndScores
@@ -358,14 +358,14 @@ class GroupTasksActivity : AppCompatActivity() {
             dataListenerAdded = true
         }
 
-
+        setUpLeaderboard()
         // Setup the RecyclerView
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = recyclerAdapter
 
         // Setup the FAB that opens NewTaskActivity
         val fabAdd = findViewById<FloatingActionButton>(R.id.fabAdd2)
-        fabAdd.setOnClickListener { beginNewTaskActivity() }
+        fabAdd.setOnClickListener { if(isOnline()) beginNewTaskActivity() }
 
         // Setup searchview
         val searchView = findViewById<SearchView>(R.id.search2)
@@ -377,7 +377,6 @@ class GroupTasksActivity : AppCompatActivity() {
             }
         })
         calendarListSetUp(taskList)
-        setUpLeaderboard()
     }
 
     // This is called by the NewTaskActivity when it is done.
