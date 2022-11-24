@@ -32,7 +32,10 @@ class TodoListApp : Application() {
         val notificationWorkerRefreshPeriod = Duration.ofHours(1)
         val notificationWorkerFlexPeriod = Duration.ofMinutes(15)
     }
-
+    private var inDeleteMode = false
+    fun toggleDeleteMode(){
+        inDeleteMode = !inDeleteMode
+    }
     val isLoggedIn get() = Firebase.auth.currentUser != null
     private lateinit var firebaseDb: FirebaseDatabase
     private lateinit var _firebaseTopLevelDir: DatabaseReference
@@ -72,8 +75,11 @@ class TodoListApp : Application() {
         taskListNotifyChange(pushToOnline = pushToOnline)
     }
     fun taskListRemove(index: Int, pushToOnline: Boolean = true) {
-        _taskListInternal.removeAt(index)
-        taskListNotifyChange(pushToOnline = pushToOnline)
+        if(inDeleteMode){
+            _taskListInternal.removeAt(index)
+            taskListNotifyChange(pushToOnline = pushToOnline)
+        }
+
     }
     fun taskListSize() = taskList.size
     // Returns a copy

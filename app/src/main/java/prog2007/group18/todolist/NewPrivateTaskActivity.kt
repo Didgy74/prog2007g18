@@ -21,7 +21,7 @@ import androidx.fragment.app.DialogFragment
 import com.google.android.material.textfield.TextInputEditText
 import java.time.LocalDateTime
 
-class NewTaskActivity : AppCompatActivity() {
+class NewPrivateTaskActivity : AppCompatActivity() {
     // Couldn't figure out how to do this without storing
     // a Deadline as a variable yet.
     //
@@ -32,22 +32,11 @@ class NewTaskActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_new_task)
-        val actionBar = supportActionBar
-        if (actionBar != null) {
-            actionBar.setDisplayHomeAsUpEnabled(true)
-        }
+
         // Use the current time as the default values for the deadline
         setCurrentDateTimeAsDeadline()
     }
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        when (item.itemId) {
-            android.R.id.home -> {
-                onBackPressed()
-                return true
-            }
-        }
-        return super.onOptionsItemSelected(item)
-    }
+
     private fun setCurrentDateTimeAsDeadline() {
         val now = LocalDateTime.now()
             .withSecond(0)
@@ -83,11 +72,24 @@ class NewTaskActivity : AppCompatActivity() {
     }
 
 
+    fun taskExists(titleInput : String) : Boolean{
+        var localTasks = Utils.loadTaskListFromFile(this )
+        for(task in localTasks){
+            if(task.title == titleInput){
+                return true
+            }
+        }
+        return false
+    }
+
     fun onDonePressed(view: View) {
         // We should likely have some checks here, to see if this would be a valid task
         // and then show a little error prompt if i.e title is empty
         val titleInput = findViewById<AutoCompleteTextView>(R.id.titleInput)
-
+        val newTitle = titleInput.text.toString()
+        if(taskExists(newTitle)){
+            return
+        }
         val useNotification = findViewById<CheckBox>(R.id.checkBoxNotification)
 
         val frequency = chosenFrequency()
@@ -101,13 +103,14 @@ class NewTaskActivity : AppCompatActivity() {
         } else {
             goal = 0
         }
+
         val intent = Task(
-                title = titleInput.text.toString(),
-                deadline,
-                frequency = frequency,
-                progressTask = findViewById<RadioButton>(R.id.radioButton6).isChecked,
-                goal = goal,
-                notify = useNotification.isChecked)
+            title = titleInput.text.toString(),
+            deadline,
+            frequency = frequency,
+            progressTask = findViewById<RadioButton>(R.id.radioButton6).isChecked,
+            goal = goal,
+            notify = useNotification.isChecked)
             .toIntent()
 
         setResult(Activity.RESULT_OK, intent)
@@ -154,7 +157,7 @@ class NewTaskActivity : AppCompatActivity() {
         override fun onDateSet(view: DatePicker, year: Int, month: Int, day: Int) {
             // Do something with the date chosen by the user
             // Month is zero-indexed for some reason.
-            (activity as NewTaskActivity).setDeadlineDate(year, month + 1, day)
+            (activity as NewPrivateTaskActivity).setDeadlineDate(year, month + 1, day)
             dateWasSet = true
         }
     }

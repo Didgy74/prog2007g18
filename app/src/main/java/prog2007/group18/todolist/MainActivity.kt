@@ -34,6 +34,10 @@ class MainActivity : AppCompatActivity() {
     val todoListApp get() = application as TodoListApp
 
     private var dataListenerAdded = false
+    var inDeleteMode = false
+    private fun isInDeleteMode() : Boolean{
+        return inDeleteMode
+    }
     // Don't use directly
     private lateinit var _loadedPreferences: PersistentPreferences
     private val preferences get() = _loadedPreferences
@@ -55,6 +59,8 @@ class MainActivity : AppCompatActivity() {
 
         val signInItem = menu.findItem(R.id.signInBtn)
         signInItem.title = if (isLoggedIn) { "Sign out" } else { "Sign in" }
+        val deleteItem = menu.findItem(R.id.deleteBtn)
+        deleteItem.title = if (!inDeleteMode) { "Delete mode" } else { "Exit delete mode" }
     }
 
     private fun toggleShowDoneTasks() {
@@ -177,16 +183,12 @@ class MainActivity : AppCompatActivity() {
 
         val localStoredTaskList = Utils.loadTaskListFromFile(this)
         val lastRetrievedTaskList = Utils.loadLastFirebaseListFromFile(this)
-
+        println("Local stored" + localStoredTaskList)
+        println("Last retrieved" + lastRetrievedTaskList)
         //Create new FinalList that starts with all tasks from local storage that haven't been uploaded
 
         var bufferList = mutableListOf<Task>()
 
-        for (task in localStoredTaskList){
-            if(!containsTask(lastRetrievedTaskList, task)){
-                bufferList.add(task)
-            }
-        }
         //Add the cloud tasks that shouldn't be deleted
         for(task in newlyRetrievedTaskList){
             if(!toBeDeleted(task, localStoredTaskList, lastRetrievedTaskList, bufferList)) {
@@ -195,7 +197,17 @@ class MainActivity : AppCompatActivity() {
                 bufferList.add(newestTask)
             }
         }
+        for (task in localStoredTaskList){
+            //Tasks that haven't been uploaded yet
+            if(!containsTask(lastRetrievedTaskList, task)){
+                //Not allowing two tasks with the same name
+                if(!containsTask(bufferList, task)){
+                    bufferList.add(task)
+                }
 
+            }
+        }
+        println(bufferList)
         //Overwriting last with new
         Utils.writeLastFirebaseListToFile(this, newlyRetrievedTaskList)
         setNewDeadlines(bufferList)
@@ -204,8 +216,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun getNewestVersion(localList: List<Task>, firebaseTask : Task) : Task{
         for (task in localList){
-            //Title and deadline values as an unique identifier
-            if(task.title == firebaseTask.title && task.deadline == firebaseTask.deadline){
+            //We used to have title and deadline as unique identifier, but had to change this when extending deadlines were added
+            if(task.title == firebaseTask.title){
                 if(task.lastEdited > firebaseTask.lastEdited){
                     return task
                 }else return firebaseTask
@@ -216,7 +228,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun containsTask(taskList2 : List<Task>, task2 : Task) : Boolean{
         for (task in taskList2) {
-            if(task.title ==  task2.title && task.deadline == task2.deadline){
+            if(task.title ==  task2.title){
                 return true
             }
         }
@@ -226,7 +238,14 @@ class MainActivity : AppCompatActivity() {
         //taskFromNewSync must be deleted if also in old sync but not in local
         if(containsTask(oldSyncList,taskFromNewSync) && !containsTask(localList, taskFromNewSync)){
             return true
+        }/*
+        for (task in localList){
+            if(!containsTask(lastRetrievedTaskList, task)){
+                bufferList.add(task)
+            }
         }
+        */
+        //Delete task if duplicate
         if(containsTask(bufferList,taskFromNewSync)){return true}
         //taskFromNewSync must not be deleted if not in old sync
         return false
@@ -322,6 +341,10 @@ class MainActivity : AppCompatActivity() {
                 toggleSignInOut()
                 true
             }
+            R.id.deleteBtn -> {
+                toggleDelete()
+                true
+            }
             else -> super.onOptionsItemSelected(item)
         }
     }
@@ -336,6 +359,7 @@ class MainActivity : AppCompatActivity() {
         recyclerAdapter = ListRecyclerAdapter(
             { todoListApp.taskList },
             { index, task -> todoListApp.taskListSet(index, task) },
+            { index -> todoListApp.taskListRemove(index)},
             preferences.showDoneTasks)
         recyclerView = findViewById(R.id.mainList)
         if (todoListApp.isLoggedIn && isOnline(this) && !dataListenerAdded){
@@ -381,7 +405,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun beginNewTaskActivity() {
-        val intent = Intent(this, NewTaskActivity::class.java)
+        val intent = Intent(this, NewPrivateTaskActivity::class.java)
         newTaskActivityLauncher.launch(intent)
     }
 
@@ -392,7 +416,11 @@ class MainActivity : AppCompatActivity() {
             beginSignInActivity()
         }
     }
-
+    private fun toggleDelete() {
+        inDeleteMode = !inDeleteMode
+        todoListApp.toggleDeleteMode()
+        updateMenuLabels()
+    }
     private fun signOutProcedure() {
         firebaseDir.removeEventListener(firebaseDbValueListener)
         dataListenerAdded = false

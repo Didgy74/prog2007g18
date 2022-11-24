@@ -18,6 +18,7 @@ import kotlin.math.roundToInt
 class ListRecyclerAdapter(
     private val getTaskList: () -> List<Task>,
     private val setTaskListElement: (index: Int, newTask: Task) -> Unit,
+    private val taskListRemove: (index: Int) -> Unit,
     showDoneTasks: Boolean) :
     RecyclerView.Adapter<ListRecyclerAdapter.ViewHolder>() {
 
@@ -98,6 +99,9 @@ class ListRecyclerAdapter(
         }else{
             val frameLayout = view.findViewById<FrameLayout>(R.id.frameLayout)
             frameLayout.setBackgroundResource(R.drawable.taskfragment_frame)
+        }
+        title.setOnClickListener(){
+            taskListRemove(displayElement.index)
         }
         // Setup the checkbox
         if(viewHolder.itemViewType == 0){
