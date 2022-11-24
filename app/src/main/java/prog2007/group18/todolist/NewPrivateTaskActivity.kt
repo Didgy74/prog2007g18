@@ -158,7 +158,7 @@ class NewPrivateTaskActivity : AppCompatActivity() {
 
         override fun onDismiss(dialog: DialogInterface) {
             super.onDismiss(dialog)
-            (activity as NewTaskActivity).onDatePickerDismissed(!dateWasSet)
+            (activity as NewPrivateTaskActivity).onDatePickerDismissed(!dateWasSet)
         }
 
         override fun onDateSet(view: DatePicker, year: Int, month: Int, day: Int) {
@@ -184,7 +184,7 @@ class NewPrivateTaskActivity : AppCompatActivity() {
         }
 
         override fun onTimeSet(view: TimePicker, hourOfDay: Int, minute: Int) {
-            (activity as NewTaskActivity).setDeadlineTime(hourOfDay, minute)
+            (activity as NewPrivateTaskActivity).setDeadlineTime(hourOfDay, minute)
         }
     }
 }

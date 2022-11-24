@@ -146,7 +146,8 @@ class MainActivity : AppCompatActivity() {
         override fun onCancelled(error: DatabaseError) {}
     }
     //This code finds the tasks with deadlines that have been passed and updates them if they're marked as daily or weekly tasks
-    private fun setNewDeadlines(taskList : List<Task>){
+    private fun setNewDeadlines(taskList : List<Task>) : List<Task>{
+        var newTaskList = taskList
         for(task in taskList){
             if(LocalDateTime.now().isAfter(task.deadline)){
                 if(task.frequency == Frequency.daily){
@@ -154,6 +155,7 @@ class MainActivity : AppCompatActivity() {
                     task.progress = 0
                     while (LocalDateTime.now().isAfter(task.deadline)){
                         task.deadline = task.deadline.plusDays(1)
+                        task.lastEdited = LocalDateTime.now()
                     }
 
                 } else if(task.frequency == Frequency.weekly){
@@ -161,11 +163,12 @@ class MainActivity : AppCompatActivity() {
                     task.progress = 0
                     while (LocalDateTime.now().isAfter(task.deadline)){
                         task.deadline = task.deadline.plusDays(7)
+                        task.lastEdited = LocalDateTime.now()
                     }
                 }
             }
         }
-
+    return newTaskList
 
     }
 
@@ -183,8 +186,7 @@ class MainActivity : AppCompatActivity() {
 
         val localStoredTaskList = Utils.loadTaskListFromFile(this)
         val lastRetrievedTaskList = Utils.loadLastFirebaseListFromFile(this)
-        println("Local stored" + localStoredTaskList)
-        println("Last retrieved" + lastRetrievedTaskList)
+
         //Create new FinalList that starts with all tasks from local storage that haven't been uploaded
 
         var bufferList = mutableListOf<Task>()
@@ -207,7 +209,7 @@ class MainActivity : AppCompatActivity() {
 
             }
         }
-        println(bufferList)
+
         //Overwriting last with new
         Utils.writeLastFirebaseListToFile(this, newlyRetrievedTaskList)
         setNewDeadlines(bufferList)
@@ -238,13 +240,7 @@ class MainActivity : AppCompatActivity() {
         //taskFromNewSync must be deleted if also in old sync but not in local
         if(containsTask(oldSyncList,taskFromNewSync) && !containsTask(localList, taskFromNewSync)){
             return true
-        }/*
-        for (task in localList){
-            if(!containsTask(lastRetrievedTaskList, task)){
-                bufferList.add(task)
-            }
         }
-        */
         //Delete task if duplicate
         if(containsTask(bufferList,taskFromNewSync)){return true}
         //taskFromNewSync must not be deleted if not in old sync
@@ -356,6 +352,7 @@ class MainActivity : AppCompatActivity() {
     private fun initialSetup() {
         _loadedPreferences = PersistentPreferences.readFromFile(this)
 
+
         recyclerAdapter = ListRecyclerAdapter(
             { todoListApp.taskList },
             { index, task -> todoListApp.taskListSet(index, task) },
@@ -387,7 +384,7 @@ class MainActivity : AppCompatActivity() {
                 return false
             }
         })
-
+        todoListApp.taskListOverwrite(setNewDeadlines(todoListApp.taskList), false)
         // Check if we should attempt to automatically sign in
         if (preferences.prefersOnline && !isLoggedIn)
             beginSignInActivity()
