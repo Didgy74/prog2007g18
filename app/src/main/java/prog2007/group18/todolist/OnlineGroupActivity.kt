@@ -28,12 +28,11 @@ class OnlineGroupActivity : AppCompatActivity() {
     private lateinit var firebaseGroups: DatabaseReference
     private lateinit var recyclerAdapter: GroupRecyclerAdapter
     private lateinit var recyclerView: RecyclerView
+    //List of pairs with group names and IDs
     private var listOfOwnGroups = mutableListOf<Pair<String, Int>>()
     private var listOfFirebaseGroups = mutableListOf<Group>()
     private fun setupFirebaseDb() {
         firebaseDb = Firebase.database(firebaseDbRepo)
-        //firebaseDir keeps track of which users that are in which groups
-        //DELETE??? firebaseDir = firebaseDb.reference.child("Groups")
 
         firebaseDir = firebaseDb.reference.child(Firebase.auth.currentUser?.uid!! + "Groups")
         firebaseDir.addValueEventListener(firebaseDbValueListenerOwnGroups)
@@ -107,10 +106,12 @@ class OnlineGroupActivity : AppCompatActivity() {
         override fun onCancelled(error: DatabaseError) {}
     }
     private fun createNewGroup(groupName: String){
-        //TODO Ensure truly unique ID
         //Creating ID with random number between 1 and 10000
         //Check if ID exists. Try again if it does.
-        val groupID = (0..100000).random()
+        var groupID = (0..100000).random()
+        while(groupExists(groupID)){
+            groupID = (0..100000).random()
+        }
         val group = Pair(groupName, groupID)
         listOfOwnGroups.add(group)
         firebaseDir.setValue(Json.encodeToString(listOfOwnGroups))
@@ -128,7 +129,6 @@ class OnlineGroupActivity : AppCompatActivity() {
 
     }
     private fun joinGroup(groupID: Int){
-        //TODO Make sure user only joins existing groups. Also not an already joined group
         val groupName = validJoin(groupID)
         if(groupName == " "){
             return
@@ -150,13 +150,19 @@ class OnlineGroupActivity : AppCompatActivity() {
             return input.all { Character.isDigit(it) }
 
     }
-    private fun validJoin(groupID: Int) : String{
-        var errorTextView = findViewById<TextView>(R.id.errorMessage)
+    private fun groupExists(groupID: Int) : Boolean{
         for(joinedGroup in listOfOwnGroups){
             if(joinedGroup.second == groupID){
-                errorTextView.text = "You are already in this group"
-                return " "
+                return true
             }
+        }
+        return false
+    }
+    private fun validJoin(groupID: Int) : String{
+        var errorTextView = findViewById<TextView>(R.id.errorMessage)
+        if(groupExists(groupID)){
+            errorTextView.text = "You are already in this group"
+            return " "
         }
         for(firebaseGroup in listOfFirebaseGroups){
             if(firebaseGroup.ID == groupID){
