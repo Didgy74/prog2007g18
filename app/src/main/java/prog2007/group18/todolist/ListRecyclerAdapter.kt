@@ -217,13 +217,14 @@ class GroupListRecyclerAdapter(
             val frameLayout = view.findViewById<FrameLayout>(R.id.frameLayout)
             frameLayout.setBackgroundResource(R.drawable.taskfragment_frame)
         }
-
-        // Setup the checkbox
-        val checkbox = view.findViewById<CheckBox>(R.id.taskItemDoneCheckbox)
-        checkbox.isChecked = task.done
-        checkbox.setOnCheckedChangeListener { _, value ->
-            groupTasksActivity.taskListSet(displayElement.index, task.copy( done = value))
-            groupTasksActivity.addScore(value)
+        if(viewHolder.itemViewType == 0) {
+            // Setup the checkbox
+            val checkbox = view.findViewById<CheckBox>(R.id.taskItemDoneCheckbox)
+            checkbox.isChecked = task.done
+            checkbox.setOnCheckedChangeListener { _, value ->
+                groupTasksActivity.taskListSet(displayElement.index, task.copy(done = value))
+                groupTasksActivity.addScore(value)
+            }
         }
         if(viewHolder.itemViewType == 1){
             val progressText = view.findViewById<TextView>(R.id.progressText)

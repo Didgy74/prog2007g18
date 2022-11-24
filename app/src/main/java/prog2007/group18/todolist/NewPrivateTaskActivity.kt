@@ -97,7 +97,7 @@ class NewPrivateTaskActivity : AppCompatActivity() {
         val goalInput = findViewById<TextInputEditText>(R.id.goalInput)
         var goal : Int
         if(findViewById<RadioButton>(R.id.radioButton6).isChecked){
-            if(goalInput.text!!.isNotEmpty()){
+            if(validInput(goalInput.text.toString())){
                 goal = goalInput.text.toString().toInt()
             } else goal = 10
         } else {
@@ -116,7 +116,14 @@ class NewPrivateTaskActivity : AppCompatActivity() {
         setResult(Activity.RESULT_OK, intent)
         finish()
     }
+    private fun validInput(input : String?): Boolean{
+        if (input.isNullOrEmpty()) {
+            return false
+        }
 
+        return input.all { Character.isDigit(it) }
+
+    }
     fun chosenFrequency() : Frequency{
         if(findViewById<RadioButton>(R.id.radioButton).isChecked) return Frequency.oneTime
         else if(findViewById<RadioButton>(R.id.radioButton2).isChecked) return Frequency.daily
