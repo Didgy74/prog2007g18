@@ -13,7 +13,7 @@ plugins {
 android {
     signingConfigs {
         debug {
-            storeFile file('D:\\School\\Mobile\\main\\app\\signing_config.jks')
+            storeFile file('signing_config.jks')
             storePassword 'group18'
             keyAlias 'key0'
             keyPassword 'group18'
